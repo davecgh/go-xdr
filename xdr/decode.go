@@ -74,7 +74,7 @@ too large to fit into a specified Go type, and exceeding max slice limitations.
 func Unmarshal(data []byte, v interface{}) (rest []byte, err error) {
 	if v == nil {
 		msg := "can't unmarshal to nil interface"
-		err = unmarshalError("Unmarshal", ErrBadArguments, msg, nil)
+		err = unmarshalError("Unmarshal", ErrNilInterface, msg, nil)
 		return data, err
 	}
 

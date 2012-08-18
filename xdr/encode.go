@@ -72,7 +72,7 @@ represented by a single opaque XDR entry, and exceeding max slice limitations.
 func Marshal(v interface{}) (rv []byte, err error) {
 	if v == nil {
 		msg := "can't marshal nil interface"
-		err = marshalError("Marshal", ErrBadArguments, msg, nil)
+		err = marshalError("Marshal", ErrNilInterface, msg, nil)
 		return nil, err
 	}
 

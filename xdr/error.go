@@ -51,6 +51,11 @@ const (
 	// from XDR that is too large to fit into a target type of int8, or opaque
 	// data that exceeds the max length of a Go slice.
 	ErrOverflow
+
+	// ErrNilInterface indicates an interface with no concerete type information
+	// was encountered.  Type information is necessary to perform mapping
+	// between XDR and Go types.
+	ErrNilInterface
 )
 
 // UnmarshalError describes a problem encountered while unmarshaling data.

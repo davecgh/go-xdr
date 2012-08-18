@@ -70,7 +70,7 @@ func (e *UnmarshalError) Error() string {
 	case ErrUnexpectedEnd, ErrBadEnumValue, ErrOverflow:
 		return fmt.Sprintf("xdr:%s: %s - read: '%v'", e.Func, e.Description, e.Value)
 	}
-	return fmt.Sprintf("xdr:%s %s", e.Func, e.Description)
+	return fmt.Sprintf("xdr:%s: %s", e.Func, e.Description)
 }
 
 // unmarshalError creates an error given a set of arguments and will copy byte
@@ -107,7 +107,7 @@ func (e *MarshalError) Error() string {
 	case ErrUnexpectedEnd, ErrBadEnumValue, ErrOverflow:
 		return fmt.Sprintf("xdr:%s: %s - read: '%v'", e.Func, e.Description, e.Value)
 	}
-	return fmt.Sprintf("xdr:%s %s", e.Func, e.Description)
+	return fmt.Sprintf("xdr:%s: %s", e.Func, e.Description)
 }
 
 // marshalError creates an error given a set of arguments and will copy byte

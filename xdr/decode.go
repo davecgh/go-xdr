@@ -483,19 +483,27 @@ func (d *Decoder) decodeStruct(v reflect.Value) (err error) {
 	vt := v.Type()
 	for i := 0; i < v.NumField(); i++ {
 		// Skip unexported fields.
-		vf := v.Field(i)
-		if !vf.CanSet() {
+		vtf := vt.Field(i)
+		if vtf.PkgPath != "" {
 			continue
 		}
 
-		// Indirect through pointers allocating them as needed.
+		// Indirect through pointers allocating them as needed and ensure
+		// the field is settable.
+		vf := v.Field(i)
 		vf, err = d.indirect(vf)
 		if err != nil {
 			return err
 		}
+		if !vf.CanSet() {
+			msg := fmt.Sprintf("can't decode to unsettable '%v'",
+				vf.Type().String())
+			err = unmarshalError("decodeStruct", ErrNotSettable, msg, nil)
+			return err
+		}
 
 		// Handle non-opaque data to []uint8 and [#]uint8 based on struct tag.
-		tag := vt.Field(i).Tag.Get("xdropaque")
+		tag := vtf.Tag.Get("xdropaque")
 		if tag == "false" {
 			switch vf.Kind() {
 			case reflect.Slice:

@@ -72,6 +72,50 @@ h.IsGrayscale = true
 h.NumSections = 10
 ```
 
+## Sample Encode Program
+
+```Go
+package main
+
+import (
+    "fmt"
+    "github.com/davecgh/go-xdr/xdr"
+)
+
+func main() {
+	// Hypothetical image header format.
+	type ImageHeader struct {
+		Signature   [3]byte
+		Version     uint32
+		IsGrayscale bool
+		NumSections uint32
+	}
+
+	// Sample image header data.
+	h := ImageHeader{[3]byte{0xAB, 0xCD, 0xEF}, 2, true, 10}
+
+	// Use Marshal to automatically determine the appropriate underlying XDR
+	// types and encode.
+	encodedData, err := xdr.Marshal(&h)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println("encodedData:", encodedData)
+}
+```
+
+The result, `encodedData`, will then contain the following XDR encoded byte
+sequence:
+
+```
+0xAB, 0xCD, 0xEF, 0x00,
+0x00, 0x00, 0x00, 0x02,
+0x00, 0x00, 0x00, 0x01,
+0x00, 0x00, 0x00, 0x0A
+```
+
 ## License
 
 ISC License

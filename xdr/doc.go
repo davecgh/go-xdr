@@ -113,7 +113,8 @@ sequence:
 In addition, while the automatic marshalling discussed above will work for the
 vast majority of cases, an Encoder object is provided that can be used to
 manually encode XDR primitives for complex scenarios where automatic
-reflection-based encoding won't work.
+reflection-based encoding won't work.  The included examples provide a sample of
+manual usage via an Encoder.
 
 
 Decoding
@@ -151,7 +152,8 @@ The struct instance, h, will then contain the following values:
 In addition, while the automatic unmarshalling discussed above will work for the
 vast majority of cases, a Decoder object is provided that can be used to
 manually decode XDR primitives for complex scenarios where automatic
-reflection-based decoding won't work.
+reflection-based decoding won't work.  The included examples provide a sample of
+manual usage via an Decoder.
 
 Errors
 

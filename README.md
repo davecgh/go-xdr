@@ -32,7 +32,7 @@ import (
 )
 
 func main() {
-  // Hypothetical image header format.
+	// Hypothetical image header format.
 	type ImageHeader struct {
 		Signature   [3]byte
 		Version     uint32
@@ -58,8 +58,8 @@ func main() {
 		return
 	}
   
-  fmt.Println("remainingBytes:", remainingBytes)
-  fmt.Printf("h: %+v", h)
+	fmt.Println("remainingBytes:", remainingBytes)
+	fmt.Printf("h: %+v", h)
 }
 ```
 

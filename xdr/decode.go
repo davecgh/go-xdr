@@ -695,11 +695,7 @@ func (d *Decoder) decode(v reflect.Value) (err error) {
 // of indirection.
 func (d *Decoder) indirect(v reflect.Value) (rv reflect.Value, err error) {
 	rv = v
-	for {
-		if rv.Kind() != reflect.Ptr {
-			break
-		}
-
+	for rv.Kind() == reflect.Ptr {
 		// Allocate pointer if needed.
 		isNil := rv.IsNil()
 		if isNil && !rv.CanSet() {

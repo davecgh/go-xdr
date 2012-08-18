@@ -554,10 +554,7 @@ func (enc *Encoder) encode(v reflect.Value) (err error) {
 // transparent encoding through arbitrary levels of indirection.
 func (enc *Encoder) indirect(v reflect.Value) (rv reflect.Value) {
 	rv = v
-	for {
-		if rv.Kind() != reflect.Ptr {
-			break
-		}
+	for rv.Kind() == reflect.Ptr {
 		rv = rv.Elem()
 	}
 	return

@@ -22,6 +22,8 @@ import (
 	"reflect"
 )
 
+var errMaxXdr = "data exceeds max xdr size limit"
+
 /*
 Marshal returns the XDR encoding of v.  It traverses v recursively and
 automatically indirects pointers through arbitrary depth to encode the actual
@@ -313,15 +315,19 @@ func (enc *Encoder) EncodeFixedOpaque(v []byte) (err error) {
 // size and appends the XDR encoded representation of it to the Encoder's data.
 //
 // A MarshalError is returned if appending the data would overflow the
-// internal data slice.  XXX: or the data in the byte slice is larger
-// than XDR supports.
+// internal data slice or the data in the byte slice is larger than XDR
+// supports.
 //
 // Reference:
 // 	RFC Section 4.10 - Variable-Length Opaque Data
 // 	Unsigned integer length followed by fixed opaque data of that length
 func (enc *Encoder) EncodeOpaque(v []byte) (err error) {
-	// TODO: Check len for overflow...
-	err = enc.EncodeUint(uint32(len(v)))
+	dataLen := len(v)
+	if uint(dataLen) > math.MaxUint32 {
+		err = marshalError("EncodeOpaque", ErrOverflow, errMaxXdr, dataLen)
+		return
+	}
+	err = enc.EncodeUint(uint32(dataLen))
 	if err != nil {
 		return
 	}
@@ -336,15 +342,18 @@ func (enc *Encoder) EncodeOpaque(v []byte) (err error) {
 // variable-length opaque data (EncodeOpaque) and manually converted as needed.
 //
 // A MarshalError is returned if appending the data would overflow the
-// internal data slice.  XXX: or the data in the byte slice is larger
-// than XDR supports.
+// internal data slice or the length of the string is larger than XDR supports.
 //
 // Reference:
 // 	RFC Section 4.11 - String
 // 	Unsigned integer length followed by bytes zero-padded to a multiple of four
 func (enc *Encoder) EncodeString(v string) (err error) {
-	// TODO: Check len for overflow...
-	err = enc.EncodeUint(uint32(len(v)))
+	dataLen := len(v)
+	if uint(dataLen) > math.MaxUint32 {
+		err = marshalError("EncodeString", ErrOverflow, errMaxXdr, dataLen)
+		return
+	}
+	err = enc.EncodeUint(uint32(dataLen))
 	if err != nil {
 		return
 	}
@@ -471,7 +480,10 @@ func (enc *Encoder) encodeStruct(v reflect.Value) (err error) {
 // the elements.
 func (enc *Encoder) encodeMap(v reflect.Value) (err error) {
 	dataLen := v.Len()
-	// XXX: Check size for > uint32
+	if uint(dataLen) > math.MaxUint32 {
+		err = marshalError("encodeMap", ErrOverflow, errMaxXdr, dataLen)
+		return
+	}
 	err = enc.EncodeUint(uint32(dataLen))
 	if err != nil {
 		return

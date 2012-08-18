@@ -68,15 +68,32 @@ unsupported Go types, attempting to encode more opaque data than can be
 represented by a single opaque XDR entry, and exceeding max slice limitations.
 */
 func Marshal(v interface{}) (rv []byte, err error) {
-	// XXX: Need to check if pointer and do indirection...
+	if v == nil {
+		msg := "can't marshal nil interface"
+		err = marshalError("Marshal", ErrBadArguments, msg, nil)
+		return nil, err
+	}
+
 	vv := reflect.ValueOf(v)
-	if vv.Kind() == reflect.Ptr && vv.IsNil() {
-		err = fmt.Errorf("xdr: Marshal(nil %v)", vv.Type().String())
+	vve := vv
+	for vve.Kind() == reflect.Ptr {
+		if vve.IsNil() {
+			msg := fmt.Sprintf("can't marshal nil pointer '%v'",
+				vv.Type().String())
+			err = marshalError("Marshal", ErrBadArguments, msg, nil)
+			return nil, err
+		}
+		vve = vve.Elem()
+	}
+	if vve.Kind() == reflect.Interface {
+		msg := fmt.Sprintf("can't marshal empty interface '%v'",
+			vv.Type().String())
+		err = marshalError("Marshal", ErrBadArguments, msg, nil)
 		return nil, err
 	}
 
 	enc := Encoder{}
-	err = enc.encode(vv)
+	err = enc.encode(vve)
 	return enc.data, err
 }
 

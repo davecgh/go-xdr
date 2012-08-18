@@ -571,6 +571,28 @@ func (d *Decoder) decodeMap(v reflect.Value) (err error) {
 	return
 }
 
+func (d *Decoder) decodeInterface(v reflect.Value) (err error) {
+	if v.IsNil() || !v.CanInterface() {
+		msg := fmt.Sprintf("can't decode to nil interface")
+		err = unmarshalError("decodeInterface", ErrNilInterface, msg, nil)
+		return err
+	}
+
+	// Extract underlying value from the interface and indirect through pointers
+	// allocating them as needed.
+	ve := reflect.ValueOf(v.Interface())
+	ve, err = d.indirect(ve)
+	if err != nil {
+		return err
+	}
+	if !ve.CanSet() {
+		msg := fmt.Sprintf("can't decode to unsettable '%v'", ve.Type().String())
+		err = unmarshalError("decodeInterface", ErrNotSettable, msg, nil)
+		return err
+	}
+	return d.decode(ve)
+}
+
 // decode is the main workhorse for unmarshalling via reflection.  It uses
 // the passed reflection value to choose the XDR primitives to decode from
 // the XDR encoded data stored in the Decoder.  It is a recursive function,
@@ -681,7 +703,13 @@ func (d *Decoder) decode(v reflect.Value) (err error) {
 			return err
 		}
 
-	// reflect.Uintptr, reflect.UnsafePointer, reflect.Interface
+	case reflect.Interface:
+		err := d.decodeInterface(ve)
+		if err != nil {
+			return err
+		}
+
+	// reflect.Uintptr, reflect.UnsafePointer
 	default:
 		msg := fmt.Sprintf("unsupported Go type '%s'", ve.Kind().String())
 		err = unmarshalError("decode", ErrUnsupportedType, msg, nil)

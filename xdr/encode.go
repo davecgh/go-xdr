@@ -426,11 +426,11 @@ func (enc *Encoder) encodeStruct(v reflect.Value) (err error) {
 	vt := v.Type()
 	for i := 0; i < v.NumField(); i++ {
 		// Skip unexported fields and indirect through pointers.
-		vf := v.Field(i)
 		vtf := vt.Field(i)
 		if vtf.PkgPath != "" {
 			continue
 		}
+		vf := v.Field(i)
 		vf = enc.indirect(vf)
 
 		// Handle non-opaque data to []uint8 and [#]uint8 based on struct tag.

@@ -416,6 +416,7 @@ func TestDecoder(t *testing.T) {
 	var err error
 
 	for i, test := range decodeTests {
+		err = nil
 		dec := NewDecoder(test.in)
 		switch test.f {
 		case fDecodeBool:

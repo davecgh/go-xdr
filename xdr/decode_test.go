@@ -250,8 +250,8 @@ func TestUnmarshal(t *testing.T) {
 		want := reflect.New(reflect.TypeOf(test.want)).Interface()
 		rest, err := Unmarshal(test.in, want)
 		if reflect.TypeOf(err) != reflect.TypeOf(test.err) {
-			t.Errorf("Unmarshal #%d failed to detect error - got: %v want: %T",
-				i, err, test.err)
+			t.Errorf("Unmarshal #%d failed to detect error - got: %v <%T> want: %T",
+				i, err, err, test.err)
 			continue
 		}
 		if rerr, ok := err.(*UnmarshalError); ok {
@@ -447,8 +447,8 @@ func TestDecoder(t *testing.T) {
 			continue
 		}
 		if reflect.TypeOf(err) != reflect.TypeOf(test.err) {
-			t.Errorf("%v #%d failed to detect error - got: %v want: %T",
-				test.f, i, err, test.err)
+			t.Errorf("%v #%d failed to detect error - got: %v <%T> want: %T",
+				test.f, i, err, err, test.err)
 			continue
 		}
 		if rerr, ok := err.(*UnmarshalError); ok {

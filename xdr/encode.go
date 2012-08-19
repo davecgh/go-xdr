@@ -285,7 +285,6 @@ func (enc *Encoder) EncodeDouble(v float64) (err error) {
 // 	RFC Section 4.9 - Fixed-Length Opaque Data
 // 	Fixed-length uninterpreted data zero-padded to a multiple of four
 func (enc *Encoder) EncodeFixedOpaque(v []byte) (err error) {
-	// XXX: Make more efficient (no copy needed...)
 	l := len(v)
 	pad := (4 - (l % 4)) % 4
 	size := l + pad
@@ -295,13 +294,14 @@ func (enc *Encoder) EncodeFixedOpaque(v []byte) (err error) {
 		return
 	}
 
-	b := make([]byte, size, size)
-	copy(b, v)
-	for i := 0; i < pad; i++ {
-		b[size-i-1] = 0
+	enc.data = append(enc.data, v...)
+	if pad > 0 {
+		b := make([]byte, pad, pad)
+		for i := 0; i < pad; i++ {
+			b[i] = 0
+		}
+		enc.data = append(enc.data, b...)
 	}
-
-	enc.data = append(enc.data, b...)
 	return
 }
 

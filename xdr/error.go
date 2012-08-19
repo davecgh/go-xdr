@@ -58,6 +58,24 @@ const (
 	ErrNilInterface
 )
 
+// Map of ErrorCode values back to their constant names for pretty printing.
+var errorCodeStrings = map[ErrorCode]string{
+	ErrBadArguments:    "ErrBadArguments",
+	ErrUnsupportedType: "ErrUnsupportedType",
+	ErrUnexpectedEnd:   "ErrUnexpectedEnd",
+	ErrBadEnumValue:    "ErrBadEnumValue",
+	ErrNotSettable:     "ErrNotSettable",
+	ErrOverflow:        "ErrOverflow",
+	ErrNilInterface:    "ErrNilInterface",
+}
+
+func (e ErrorCode) String() string {
+	if s := errorCodeStrings[e]; s != "" {
+		return s
+	}
+	return fmt.Sprintf("Unknown ErrorCode (%d)", e)
+}
+
 // UnmarshalError describes a problem encountered while unmarshaling data.
 // Some potential issues are unsupported Go types, attempting to decode a value
 // which is too large to fit into a specified Go type, and exceeding max slice

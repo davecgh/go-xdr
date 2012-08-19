@@ -160,7 +160,7 @@ func ExampleNewEncoder() {
 	isGrayscale := true
 	numSections := uint32(10)
 
-	// Get a new decoder for manual encoding.
+	// Get a new encoder for manual encoding.
 	enc := xdr.NewEncoder()
 
 	err := enc.EncodeFixedOpaque(signature)

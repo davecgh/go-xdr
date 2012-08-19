@@ -69,6 +69,7 @@ var errorCodeStrings = map[ErrorCode]string{
 	ErrNilInterface:    "ErrNilInterface",
 }
 
+// String returns the ErrorCode as a human-readable name.
 func (e ErrorCode) String() string {
 	if s := errorCodeStrings[e]; s != "" {
 		return s

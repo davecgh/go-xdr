@@ -87,12 +87,6 @@ func Marshal(v interface{}) (rv []byte, err error) {
 		}
 		vve = vve.Elem()
 	}
-	if vve.Kind() == reflect.Interface {
-		msg := fmt.Sprintf("can't marshal empty interface '%v'",
-			vv.Type().String())
-		err = marshalError("Marshal", ErrBadArguments, msg, nil)
-		return nil, err
-	}
 
 	enc := Encoder{}
 	err = enc.encode(vve)
@@ -489,7 +483,7 @@ func (enc *Encoder) encodeMap(v reflect.Value) (err error) {
 		return
 	}
 
-	// Decode each key and value according to their type.
+	// Encode each key and value according to their type.
 	for _, key := range v.MapKeys() {
 		err = enc.encode(key)
 		if err != nil {
@@ -502,6 +496,26 @@ func (enc *Encoder) encodeMap(v reflect.Value) (err error) {
 		}
 	}
 	return
+}
+
+// encodeInterface examines the interface represented by the passed reflection
+// value to detect whether it is an interface that can be encoded if it is,
+// extracts the underlying value to pass back into the encode function for
+// encoding according to its type.
+//
+// A MarshalError is returned if any issues are encountered while encoding
+// the interface.
+func (enc *Encoder) encodeInterface(v reflect.Value) (err error) {
+	if v.IsNil() || !v.CanInterface() {
+		msg := fmt.Sprintf("can't encode nil interface")
+		err = marshalError("encodeInterface", ErrNilInterface, msg, nil)
+		return err
+	}
+
+	// Extract underlying value from the interface and indirect through pointers.
+	ve := reflect.ValueOf(v.Interface())
+	ve = enc.indirect(ve)
+	return enc.encode(ve)
 }
 
 // encode is the main workhorse for marshalling via reflection.  It uses
@@ -553,7 +567,10 @@ func (enc *Encoder) encode(v reflect.Value) (err error) {
 	case reflect.Map:
 		err = enc.encodeMap(ve)
 
-	// reflect.Uintptr, reflect.UnsafePointer, reflect.Interface
+	case reflect.Interface:
+		err = enc.encodeInterface(ve)
+
+	// reflect.Uintptr, reflect.UnsafePointer
 	default:
 		msg := fmt.Sprintf("unsupported Go type '%s'", ve.Kind().String())
 		err = marshalError("encode", ErrUnsupportedType, msg, nil)

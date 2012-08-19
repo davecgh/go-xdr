@@ -579,6 +579,13 @@ func (d *Decoder) decodeMap(v reflect.Value) (err error) {
 	return
 }
 
+// decodeInterface examines the interface represented by the passed reflection
+// value to detect whether it is an interface that can be decoded into and
+// if it is, extracts the underlying value to pass back into the decode function
+// for decoding according to its type.
+//
+// An UnmarshalError is returned if any issues are encountered while decoding
+// the interface.
 func (d *Decoder) decodeInterface(v reflect.Value) (err error) {
 	if v.IsNil() || !v.CanInterface() {
 		msg := fmt.Sprintf("can't decode to nil interface")

@@ -250,7 +250,7 @@ func TestUnmarshal(t *testing.T) {
 		want := reflect.New(reflect.TypeOf(test.want)).Interface()
 		rest, err := Unmarshal(test.in, want)
 		if reflect.TypeOf(err) != reflect.TypeOf(test.err) {
-			t.Errorf("Unmarshal #%d failed to detect error - got: %v want: %v",
+			t.Errorf("Unmarshal #%d failed to detect error - got: %v want: %T",
 				i, err, test.err)
 			continue
 		}
@@ -276,7 +276,6 @@ func TestUnmarshal(t *testing.T) {
 			continue
 		}
 	}
-
 }
 
 // decodeFunc is used to identify which public function of the Decoder object
@@ -447,7 +446,7 @@ func TestDecoder(t *testing.T) {
 			continue
 		}
 		if reflect.TypeOf(err) != reflect.TypeOf(test.err) {
-			t.Errorf("%v #%d failed to detect error - got: %v want: %v",
+			t.Errorf("%v #%d failed to detect error - got: %v want: %T",
 				test.f, i, err, test.err)
 			continue
 		}

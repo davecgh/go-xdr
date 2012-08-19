@@ -369,7 +369,20 @@ func (enc *Encoder) EncodeString(v string) (err error) {
 func (enc *Encoder) encodeFixedArray(v reflect.Value, ignoreOpaque bool) (err error) {
 	// Treat [#]byte (byte is alias for uint8) as opaque data unless ignored.
 	if !ignoreOpaque && v.Type().Elem().Kind() == reflect.Uint8 {
-		err = enc.EncodeFixedOpaque(v.Slice(0, v.Len()).Bytes())
+		// Create a slice of the underlying array for better efficiency when
+		// possible.  Can't create a slice of an unaddressable value.
+		if v.CanAddr() {
+			err = enc.EncodeFixedOpaque(v.Slice(0, v.Len()).Bytes())
+			return
+		}
+
+		// When the underlying array isn't addressable fall back to copying the
+		// array into a new slice.  This is rather ugly, but the inability to
+		// create a constant slice from an unaddressable array seems to be a
+		// limitation of Go.
+		slice := make([]byte, v.Len(), v.Len())
+		reflect.Copy(reflect.ValueOf(slice), v)
+		err = enc.EncodeFixedOpaque(slice)
 		return
 	}
 

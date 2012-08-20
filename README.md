@@ -19,7 +19,6 @@ http://localhost:6060/pkg/github.com/davecgh/go-xdr/xdr/
 
 ```bash
 $ go get github.com/davecgh/go-xdr/xdr
-$ go install github.com/davecgh/go-xdr/xdr
 ```
 
 ## Sample Decode Program

@@ -3,7 +3,8 @@
 Go-xdr implements the data representation portion of the External Data
 Representation (XDR) standard protocol as specified in RFC 4506 (obsoletes RFC
 1832 and RFC 1014) in Pure Go (Golang).  A comprehensive suite of tests are
-provided to ensure proper functionality.
+provided to ensure proper functionality.  It is licensed under the liberal ISC
+license, so it may be used in open source or commercial projects.
 
 ## Documentation
 
@@ -118,4 +119,4 @@ sequence:
 
 ## License
 
-ISC License
+Go-xdr is licensed under the liberal ISC License.

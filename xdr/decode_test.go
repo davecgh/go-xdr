@@ -24,7 +24,7 @@ import (
 )
 
 // subTest is used to allow testing of the Unmarshal function into struct fields
-// which are struct themselves.
+// which are structs themselves.
 type subTest struct {
 	A string
 	B uint8
@@ -318,7 +318,7 @@ func (f decodeFunc) String() string {
 	return fmt.Sprintf("Unknown decodeFunc (%d)", f)
 }
 
-// decodeTest is used to describe a test to be perfomed against the public
+// decodeTest is used to describe a test to be performed against the public
 // functions of the Decoder object.
 type decodeTest struct {
 	f    decodeFunc

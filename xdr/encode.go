@@ -332,7 +332,7 @@ func (enc *Encoder) EncodeOpaque(v []byte) (err error) {
 // EncodeString appends the XDR encoded representation of the passed string
 // to the Encoder's data.  Character encoding is assumed to be UTF-8 and
 // therefore ASCII compatible.  If the underlying character encoding
-// is not compatibile with this assumption, the data can instead be written as
+// is not compatible with this assumption, the data can instead be written as
 // variable-length opaque data (EncodeOpaque) and manually converted as needed.
 //
 // A MarshalError is returned if appending the data would overflow the

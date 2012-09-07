@@ -85,7 +85,7 @@ var structMarshalTestWant = []byte{
 	0x00, 0x00, 0x00, 0x01, // R value map1
 }
 
-// marshalTest is used to describe a test to be perfomed against the Marshal
+// marshalTest is used to describe a test to be performed against the Marshal
 // function.
 type marshalTest struct {
 	in   interface{}
@@ -286,7 +286,7 @@ func (f encodeFunc) String() string {
 	return fmt.Sprintf("Unknown encodeFunc (%d)", f)
 }
 
-// encodeTest is used to describe a test to be perfomed against the public
+// encodeTest is used to describe a test to be performed against the public
 // functions of the Encoder object.
 type encodeTest struct {
 	f    encodeFunc

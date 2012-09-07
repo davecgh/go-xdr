@@ -32,7 +32,7 @@ const (
 	// marshalling and unmarshalling XDR data.
 	ErrUnsupportedType
 
-	// ErrUnexpectedEnd indicates the end of a sequences of bytes was encountered
+	// ErrUnexpectedEnd indicates the end of a sequence of bytes was encountered
 	// before it was expected.  This typically indicates issues such as
 	// truncated data or improper structure.
 	ErrUnexpectedEnd
@@ -52,7 +52,7 @@ const (
 	// data that exceeds the max length of a Go slice.
 	ErrOverflow
 
-	// ErrNilInterface indicates an interface with no concerete type information
+	// ErrNilInterface indicates an interface with no concrete type information
 	// was encountered.  Type information is necessary to perform mapping
 	// between XDR and Go types.
 	ErrNilInterface

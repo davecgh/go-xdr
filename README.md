@@ -9,8 +9,8 @@ license, so it may be used in open source or commercial projects.
 ## Documentation
 
 Full `go doc` style documentation for the project can be viewed online without
-installing this package by using the excellent GoPkgDoc site here:
-http://go.pkgdoc.org/github.com/davecgh/go-xdr/xdr
+installing this package by using the excellent GoDoc site here:
+http://godoc.org/github.com/davecgh/go-xdr/xdr
 
 You can also view the documentation locally once the package is installed with
 the `godoc` tool by running `godoc -http=":6060"` and pointing your browser to

@@ -65,7 +65,7 @@ Notes and Limitations:
 	  thus indistinguishable under reflection
 	* Cyclic data structures are not supported and will result in infinite loops
 
-If any issues are encountered during the unmarshalling process, an 
+If any issues are encountered during the unmarshalling process, an
 UnmarshalError is returned with a human readable description as well as
 an ErrorCode value for further inspection from sophisticated callers.  Some
 potential issues are unsupported Go types, attempting to decode a value which is

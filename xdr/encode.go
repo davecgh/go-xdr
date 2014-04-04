@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Dave Collins <dave@davec.name>
+ * Copyright (c) 2012-2014 Dave Collins <dave@davec.name>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"time"
 )
 
 var errMaxXdr = "data exceeds max xdr size limit"
@@ -49,6 +50,7 @@ by v and performs a mapping of Go types to the underlying XDR types as follows:
 	[#]<type> -> XDR Fixed-Length Array
 	struct -> XDR Structure
 	map -> XDR Variable-Length Array of two-element XDR Structures
+	time.Time -> XDR String encoded with RFC3339 nanosecond precision
 
 Notes and Limitations:
 
@@ -542,7 +544,22 @@ func (enc *Encoder) encode(v reflect.Value) (err error) {
 		return
 	}
 
+	// Indirect through pointers to get at the concrete value.
 	ve := enc.indirect(v)
+
+	// Handle time.Time values by encoding them as an RFC3339 formatted
+	// string with nanosecond precision.  Check the type string before
+	// doing a full blown conversion to interface and type assertion since
+	// checking a string is much quicker.
+	if ve.Type().String() == "time.Time" && ve.CanInterface() {
+		viface := ve.Interface()
+		if tv, ok := viface.(time.Time); ok {
+			err = enc.EncodeString(tv.Format(time.RFC3339Nano))
+			return
+		}
+	}
+
+	// Handle native Go types.
 	switch ve.Kind() {
 	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int:
 		err = enc.EncodeInt(int32(ve.Int()))

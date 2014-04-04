@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Dave Collins <dave@davec.name>
+ * Copyright (c) 2012-2014 Dave Collins <dave@davec.name>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"time"
 )
 
 const maxInt = int(^uint(0) >> 1)
@@ -56,6 +57,7 @@ by v and performs a mapping of underlying XDR types to Go types as follows:
 	[#]<type> <- XDR Fixed-Length Array
 	struct <- XDR Structure
 	map <- XDR Variable-Length Array of two-element XDR Structures
+	time.Time <- XDR String encoded with RFC3339 nanosecond precision
 
 Notes and Limitations:
 
@@ -625,6 +627,26 @@ func (d *Decoder) decode(v reflect.Value) (err error) {
 	if err != nil {
 		return err
 	}
+
+	// Handle time.Time values by decoding them as an RFC3339 formatted
+	// string with nanosecond precision.  Check the type string rather
+	// than doing a full blown conversion to interface and type assertion
+	// since checking a string is much quicker.
+	if ve.Type().String() == "time.Time" {
+		// Read the value as a string and parse it.
+		timeString, err := d.DecodeString()
+		if err != nil {
+			return err
+		}
+		ttv, err := time.Parse(time.RFC3339, timeString)
+		if err != nil {
+			return err
+		}
+		ve.Set(reflect.ValueOf(ttv))
+		return nil
+	}
+
+	// Handle native Go types.
 	switch ve.Kind() {
 	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int:
 		i, err := d.DecodeInt()

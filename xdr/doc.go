@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Dave Collins <dave@davec.name>
+ * Copyright (c) 2012-2014 Dave Collins <dave@davec.name>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -68,6 +68,7 @@ and Unmarshal functions has specific details of how the mapping proceeds.
 	[#]<type> <-> XDR Fixed-Length Array
 	struct <-> XDR Structure
 	map <-> XDR Variable-Length Array of two-element XDR Structures
+	time.Time <-> XDR String encoded with RFC3339 nanosecond precision
 
 Notes and Limitations:
 

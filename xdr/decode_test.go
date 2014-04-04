@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Dave Collins <dave@davec.name>
+ * Copyright (c) 2012-2014 Dave Collins <dave@davec.name>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -21,6 +21,7 @@ import (
 	"math"
 	"reflect"
 	"testing"
+	"time"
 )
 
 // subTest is used to allow testing of the Unmarshal function into struct fields
@@ -51,6 +52,7 @@ type allTypesTest struct {
 	P [2]subTest
 	Q subTest
 	R map[string]uint32
+	S time.Time
 }
 
 // structTestIn is input data for the big struct test of all supported types.
@@ -82,6 +84,10 @@ var structTestIn = []byte{
 	0x00, 0x00, 0x00, 0x01, // R value map1
 	0x00, 0x00, 0x00, 0x04, 0x6D, 0x61, 0x70, 0x32, // R key map2
 	0x00, 0x00, 0x00, 0x02, // R value map2
+	0x00, 0x00, 0x00, 0x19, 0x32, 0x30, 0x31, 0x34,
+	0x2d, 0x30, 0x34, 0x2d, 0x30, 0x33, 0x54, 0x32,
+	0x31, 0x3a, 0x35, 0x31, 0x3a, 0x32, 0x36, 0x2d,
+	0x30, 0x35, 0x3a, 0x30, 0x30, 0x00, 0x00, 0x00, // S
 }
 
 // structTestWant is the expected output after unmarshalling structTestIn.
@@ -104,6 +110,7 @@ var structTestWant = allTypesTest{
 	[2]subTest{{"one", 1}, {"two", 2}},      // P
 	subTest{"bar", 3},                       // Q
 	map[string]uint32{"map1": 1, "map2": 2}, // R
+	time.Unix(1396579886, 0),                // S
 }
 
 // unmarshalTest is used to describe a test to be perfomed against the Unmarshal
@@ -238,6 +245,14 @@ var unmarshalTests = []unmarshalTest{
 		map[string]uint32{"map1": 1}, nil},
 	// Expected Failure -- 1 map element - not enough bytes
 	{[]byte{0x00, 0x00, 0x00, 0x01}, map[string]uint32{}, &UnmarshalError{ErrorCode: ErrUnexpectedEnd}},
+
+	// time.Time - XDR String per RFC3339
+	{[]byte{
+		0x00, 0x00, 0x00, 0x19, 0x32, 0x30, 0x31, 0x34,
+		0x2d, 0x30, 0x34, 0x2d, 0x30, 0x33, 0x54, 0x32,
+		0x32, 0x3a, 0x32, 0x34, 0x3a, 0x34, 0x38, 0x2d,
+		0x30, 0x35, 0x3a, 0x30, 0x30, 0x00, 0x00, 0x00,
+	}, time.Unix(1396581888, 0), nil},
 
 	// struct - XDR Structure -- test struct contains all supported types
 	{structTestIn, structTestWant, nil},

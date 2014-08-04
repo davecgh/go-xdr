@@ -292,6 +292,9 @@ func TestUnmarshal(t *testing.T) {
 
 		// Finally, ensure the read value is the expected one.
 		wantElem := reflect.Indirect(reflect.ValueOf(want)).Interface()
+		if tv, ok := wantElem.(time.Time); ok {
+			wantElem = tv.UTC()
+		}
 		if !reflect.DeepEqual(wantElem, test.wantVal) {
 			t.Errorf("UnmarshalReader #%d got: %v want: %v\n", i, wantElem, test.wantVal)
 			continue

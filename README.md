@@ -1,4 +1,8 @@
 # go-xdr
+========
+
+[![Build Status](https://travis-ci.org/davecgh/go-xdr.png?branch=master)]
+(https://travis-ci.org/davecgh/go-xdr)
 
 Go-xdr implements the data representation portion of the External Data
 Representation (XDR) standard protocol as specified in RFC 4506 (obsoletes RFC

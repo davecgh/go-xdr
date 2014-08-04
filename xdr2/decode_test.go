@@ -53,7 +53,7 @@ type allTypesTest struct {
 	N [3]byte
 	O []int16
 	P [2]subTest
-	Q subTest
+	Q *subTest
 	R map[string]uint32
 	S time.Time
 }
@@ -114,7 +114,7 @@ func TestUnmarshal(t *testing.T) {
 		[3]byte{1, 2, 3},                        // N
 		[]int16{512, 1024, 2048},                // O
 		[2]subTest{{"one", 1}, {"two", 2}},      // P
-		subTest{"bar", 3},                       // Q
+		&subTest{"bar", 3},                      // Q
 		map[string]uint32{"map1": 1, "map2": 2}, // R
 		time.Unix(1396581888, 0).UTC(),          // S
 	}

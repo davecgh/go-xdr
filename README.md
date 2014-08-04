@@ -6,20 +6,27 @@ Representation (XDR) standard protocol as specified in RFC 4506 (obsoletes RFC
 provided to ensure proper functionality.  It is licensed under the liberal ISC
 license, so it may be used in open source or commercial projects.
 
+NOTE: Version 1 of this package is still available via the
+github.com/davecgh/go-xdr/xdr import path to avoid breaking existing clients.  However, it is highly recommended that all old clients upgrade to version 2
+and all new clients use version 2.  In addition to some speed optimizations,
+version 2 has been been updated to work with standard the io.Reader and
+io.Writer interfaces instead of raw byte slices.  This allows it to by much more
+flexible and work directly with files, network connections, etc.
+
 ## Documentation
 
 Full `go doc` style documentation for the project can be viewed online without
 installing this package by using the excellent GoDoc site here:
-http://godoc.org/github.com/davecgh/go-xdr/xdr
+http://godoc.org/github.com/davecgh/go-xdr/xdr2
 
 You can also view the documentation locally once the package is installed with
 the `godoc` tool by running `godoc -http=":6060"` and pointing your browser to
-http://localhost:6060/pkg/github.com/davecgh/go-xdr/xdr/
+http://localhost:6060/pkg/github.com/davecgh/go-xdr/xdr2/
 
 ## Installation
 
 ```bash
-$ go get github.com/davecgh/go-xdr/xdr
+$ go get github.com/davecgh/go-xdr/xdr2
 ```
 
 ## Sample Decode Program
@@ -28,8 +35,10 @@ $ go get github.com/davecgh/go-xdr/xdr
 package main
 
 import (
+	"bytes"
     "fmt"
-    "github.com/davecgh/go-xdr/xdr"
+
+    "github.com/davecgh/go-xdr/xdr2"
 )
 
 func main() {
@@ -48,18 +57,19 @@ func main() {
 		0xAB, 0xCD, 0xEF, 0x00, // Signature
 		0x00, 0x00, 0x00, 0x02, // Version
 		0x00, 0x00, 0x00, 0x01, // IsGrayscale
-		0x00, 0x00, 0x00, 0x0A} // NumSections
+		0x00, 0x00, 0x00, 0x0A, // NumSections
+	}
 
 	// Declare a variable to provide Unmarshal with a concrete type and instance
 	// to decode into.
 	var h ImageHeader
-	remainingBytes, err := xdr.Unmarshal(encodedData, &h)
+	bytesRead, err := xdr.Unmarshal(bytes.NewReader(encodedData), &h)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
   
-	fmt.Println("remainingBytes:", remainingBytes)
+	fmt.Println("bytes read:", bytesRead)
 	fmt.Printf("h: %+v", h)
 }
 ```
@@ -79,8 +89,10 @@ h.NumSections = 10
 package main
 
 import (
+	"bytes"
     "fmt"
-    "github.com/davecgh/go-xdr/xdr"
+
+    "github.com/davecgh/go-xdr/xdr2"
 )
 
 func main() {
@@ -95,15 +107,18 @@ func main() {
 	// Sample image header data.
 	h := ImageHeader{[3]byte{0xAB, 0xCD, 0xEF}, 2, true, 10}
 
-	// Use Marshal to automatically determine the appropriate underlying XDR
+	// Use marshal to automatically determine the appropriate underlying XDR
 	// types and encode.
-	encodedData, err := xdr.Marshal(&h)
+	var w bytes.Buffer
+	bytesWritten, err := xdr.Marshal(&w, &h)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	fmt.Println("encodedData:", encodedData)
+	encodedData := w.Bytes()
+	fmt.Println("bytes written:", bytesWritten)
+	fmt.Println("encoded data:", encodedData)
 }
 ```
 
@@ -114,7 +129,7 @@ sequence:
 0xAB, 0xCD, 0xEF, 0x00,
 0x00, 0x00, 0x00, 0x02,
 0x00, 0x00, 0x00, 0x01,
-0x00, 0x00, 0x00, 0x0A
+0x00, 0x00, 0x00, 0x0A,
 ```
 
 ## License

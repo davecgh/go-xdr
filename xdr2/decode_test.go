@@ -131,17 +131,21 @@ func TestUnmarshal(t *testing.T) {
 		{[]byte{0x00, 0x00, 0x00, 0x7F}, int8(127), 4, nil},
 		{[]byte{0xFF, 0xFF, 0xFF, 0xFF}, int8(-1), 4, nil},
 		{[]byte{0xFF, 0xFF, 0xFF, 0x80}, int8(-128), 4, nil},
-		// Expected Failures -- 128, -129 overflow int8
+		// Expected Failures -- 128, -129 overflow int8 and not enough
+		// bytes
 		{[]byte{0x00, 0x00, 0x00, 0x80}, int8(0), 4, &UnmarshalError{ErrorCode: ErrOverflow}},
 		{[]byte{0xFF, 0xFF, 0xFF, 0x7F}, int8(0), 4, &UnmarshalError{ErrorCode: ErrOverflow}},
+		{[]byte{0x00, 0x00, 0x00}, int8(0), 3, &UnmarshalError{ErrorCode: ErrIO}},
 
 		// uint8 - XDR Unsigned Integer
 		{[]byte{0x00, 0x00, 0x00, 0x00}, uint8(0), 4, nil},
 		{[]byte{0x00, 0x00, 0x00, 0x40}, uint8(64), 4, nil},
 		{[]byte{0x00, 0x00, 0x00, 0xFF}, uint8(255), 4, nil},
-		// Expected Failures -- 256, -1 overflow uint8
+		// Expected Failures -- 256, -1 overflow uint8 and not enough
+		// bytes
 		{[]byte{0x00, 0x00, 0x01, 0x00}, uint8(0), 4, &UnmarshalError{ErrorCode: ErrOverflow}},
 		{[]byte{0xFF, 0xFF, 0xFF, 0xFF}, uint8(0), 4, &UnmarshalError{ErrorCode: ErrOverflow}},
+		{[]byte{0x00, 0x00, 0x00}, uint8(0), 3, &UnmarshalError{ErrorCode: ErrIO}},
 
 		// int16 - XDR Integer
 		{[]byte{0x00, 0x00, 0x00, 0x00}, int16(0), 4, nil},
@@ -149,17 +153,21 @@ func TestUnmarshal(t *testing.T) {
 		{[]byte{0x00, 0x00, 0x7F, 0xFF}, int16(32767), 4, nil},
 		{[]byte{0xFF, 0xFF, 0xFF, 0xFF}, int16(-1), 4, nil},
 		{[]byte{0xFF, 0xFF, 0x80, 0x00}, int16(-32768), 4, nil},
-		// Expected Failures -- 32768, -32769 overflow int16
+		// Expected Failures -- 32768, -32769 overflow int16 and not
+		// enough bytes
 		{[]byte{0x00, 0x00, 0x80, 0x00}, int16(0), 4, &UnmarshalError{ErrorCode: ErrOverflow}},
 		{[]byte{0xFF, 0xFF, 0x7F, 0xFF}, int16(0), 4, &UnmarshalError{ErrorCode: ErrOverflow}},
+		{[]byte{0x00, 0x00, 0x00}, uint16(0), 3, &UnmarshalError{ErrorCode: ErrIO}},
 
 		// uint16 - XDR Unsigned Integer
 		{[]byte{0x00, 0x00, 0x00, 0x00}, uint16(0), 4, nil},
 		{[]byte{0x00, 0x00, 0x04, 0x00}, uint16(1024), 4, nil},
 		{[]byte{0x00, 0x00, 0xFF, 0xFF}, uint16(65535), 4, nil},
-		// Expected Failures -- 65536, -1 overflow uint16
+		// Expected Failures -- 65536, -1 overflow uint16 and not enough
+		// bytes
 		{[]byte{0x00, 0x01, 0x00, 0x00}, uint16(0), 4, &UnmarshalError{ErrorCode: ErrOverflow}},
 		{[]byte{0xFF, 0xFF, 0xFF, 0xFF}, uint16(0), 4, &UnmarshalError{ErrorCode: ErrOverflow}},
+		{[]byte{0x00, 0x00, 0x00}, uint16(0), 3, &UnmarshalError{ErrorCode: ErrIO}},
 
 		// int32 - XDR Integer
 		{[]byte{0x00, 0x00, 0x00, 0x00}, int32(0), 4, nil},
@@ -167,11 +175,15 @@ func TestUnmarshal(t *testing.T) {
 		{[]byte{0x7F, 0xFF, 0xFF, 0xFF}, int32(2147483647), 4, nil},
 		{[]byte{0xFF, 0xFF, 0xFF, 0xFF}, int32(-1), 4, nil},
 		{[]byte{0x80, 0x00, 0x00, 0x00}, int32(-2147483648), 4, nil},
+		// Expected Failure -- not enough bytes
+		{[]byte{0x00, 0x00, 0x00}, int32(0), 3, &UnmarshalError{ErrorCode: ErrIO}},
 
 		// uint32 - XDR Unsigned Integer
 		{[]byte{0x00, 0x00, 0x00, 0x00}, uint32(0), 4, nil},
 		{[]byte{0x00, 0x04, 0x00, 0x00}, uint32(262144), 4, nil},
 		{[]byte{0xFF, 0xFF, 0xFF, 0xFF}, uint32(4294967295), 4, nil},
+		// Expected Failure -- not enough bytes
+		{[]byte{0x00, 0x00, 0x00}, uint32(0), 3, &UnmarshalError{ErrorCode: ErrIO}},
 
 		// int64 - XDR Hyper Integer
 		{[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, int64(0), 8, nil},
@@ -264,8 +276,14 @@ func TestUnmarshal(t *testing.T) {
 		// map[string]uint32
 		{[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x04, 0x6D, 0x61, 0x70, 0x31, 0x00, 0x00, 0x00, 0x01},
 			map[string]uint32{"map1": 1}, 16, nil},
-		// Expected Failure -- 1 map element - not enough bytes
+		// Expected Failures -- not enough bytes in  length, 1 map
+		// element no extra bytes, 1 map element not enough bytes for
+		// key, 1 map element not enough bytes for value.
+		{[]byte{0x00, 0x00, 0x00}, map[string]uint32{}, 3, &UnmarshalError{ErrorCode: ErrIO}},
 		{[]byte{0x00, 0x00, 0x00, 0x01}, map[string]uint32{}, 4, &UnmarshalError{ErrorCode: ErrIO}},
+		{[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00}, map[string]uint32{}, 7, &UnmarshalError{ErrorCode: ErrIO}},
+		{[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x04, 0x6D, 0x61, 0x70, 0x31},
+			map[string]uint32{}, 12, &UnmarshalError{ErrorCode: ErrIO}},
 
 		// time.Time - XDR String per RFC3339
 		{[]byte{

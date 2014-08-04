@@ -224,13 +224,20 @@ func TestUnmarshal(t *testing.T) {
 		{[]byte{0x00, 0x00, 0x00, 0x00}, "", 4, nil},
 		{[]byte{0x00, 0x00, 0x00, 0x03, 0x78, 0x64, 0x72, 0x00}, "xdr", 8, nil},
 		{[]byte{0x00, 0x00, 0x00, 0x06, 0xCF, 0x84, 0x3D, 0x32, 0xCF, 0x80, 0x00, 0x00}, "τ=2π", 12, nil},
-		// Expected Failure -- String len 255 larger than available bytes
+		// Expected Failures -- not enough bytes for length, length
+		// larger than allowed, and len larger than available bytes.
+		{[]byte{0x00, 0x00, 0xFF}, "", 3, &UnmarshalError{ErrorCode: ErrIO}},
+		{[]byte{0xFF, 0xFF, 0xFF, 0xFF}, "", 4, &UnmarshalError{ErrorCode: ErrOverflow}},
 		{[]byte{0x00, 0x00, 0x00, 0xFF}, "", 4, &UnmarshalError{ErrorCode: ErrIO}},
 
 		// []byte - XDR Variable Opaque
 		{[]byte{0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00}, []byte{0x01}, 8, nil},
 		{[]byte{0x00, 0x00, 0x00, 0x03, 0x01, 0x02, 0x03, 0x00}, []byte{0x01, 0x02, 0x03}, 8, nil},
-		// Expected Failure -- 255 bytes of opaque data larger than available bytes
+		// Expected Failures -- not enough bytes for length, length
+		// larger than allowed, and data larger than available bytes.
+		{[]byte{0x00, 0x00, 0xFF}, []byte{}, 3, &UnmarshalError{ErrorCode: ErrIO}},
+		{[]byte{0xFF, 0xFF, 0xFF, 0xFF}, []byte{}, 4, &UnmarshalError{ErrorCode: ErrOverflow}},
+		{[]byte{0x7F, 0xFF, 0xFF, 0xFD}, []byte{}, 4, &UnmarshalError{ErrorCode: ErrOverflow}},
 		{[]byte{0x00, 0x00, 0x00, 0xFF}, []byte{}, 4, &UnmarshalError{ErrorCode: ErrIO}},
 
 		// [#]byte - XDR Fixed Opaque
@@ -416,14 +423,21 @@ func TestDecoder(t *testing.T) {
 		// Opaque
 		{fDecodeOpaque, []byte{0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00}, []byte{0x01}, 8, nil},
 		{fDecodeOpaque, []byte{0x00, 0x00, 0x00, 0x03, 0x01, 0x02, 0x03, 0x00}, []byte{0x01, 0x02, 0x03}, 8, nil},
-		// Expected Failure -- 255 bytes of opaque data larger than available bytes
+		// Expected Failures -- not enough bytes for length, length
+		// larger than allowed, and data larger than available bytes.
+		{fDecodeOpaque, []byte{0x00, 0x00, 0xFF}, []byte{}, 3, &UnmarshalError{ErrorCode: ErrIO}},
+		{fDecodeOpaque, []byte{0xFF, 0xFF, 0xFF, 0xFF}, []byte{}, 4, &UnmarshalError{ErrorCode: ErrOverflow}},
+		{fDecodeOpaque, []byte{0x7F, 0xFF, 0xFF, 0xFD}, []byte{}, 4, &UnmarshalError{ErrorCode: ErrOverflow}},
 		{fDecodeOpaque, []byte{0x00, 0x00, 0x00, 0xFF}, []byte{}, 4, &UnmarshalError{ErrorCode: ErrIO}},
 
 		// String
 		{fDecodeString, []byte{0x00, 0x00, 0x00, 0x00}, "", 4, nil},
 		{fDecodeString, []byte{0x00, 0x00, 0x00, 0x03, 0x78, 0x64, 0x72, 0x00}, "xdr", 8, nil},
 		{fDecodeString, []byte{0x00, 0x00, 0x00, 0x06, 0xCF, 0x84, 0x3D, 0x32, 0xCF, 0x80, 0x00, 0x00}, "τ=2π", 12, nil},
-		// Expected Failure -- String len 255 larger than available bytes
+		// Expected Failures -- not enough bytes for length, length
+		// larger than allowed, and len larger than available bytes.
+		{fDecodeString, []byte{0x00, 0x00, 0xFF}, "", 3, &UnmarshalError{ErrorCode: ErrIO}},
+		{fDecodeString, []byte{0xFF, 0xFF, 0xFF, 0xFF}, "", 4, &UnmarshalError{ErrorCode: ErrOverflow}},
 		{fDecodeString, []byte{0x00, 0x00, 0x00, 0xFF}, "", 4, &UnmarshalError{ErrorCode: ErrIO}},
 
 		// Uhyper

@@ -60,6 +60,13 @@ type allTypesTest struct {
 
 // TestUnmarshal ensures the Unmarshal function works properly with all types.
 func TestUnmarshal(t *testing.T) {
+	// Variables for various unsupported Unmarshal types.
+	var nilInterface interface{}
+	var testChan chan int
+	var testFunc func()
+	var testComplex64 complex64
+	var testComplex128 complex128
+
 	// structTestIn is input data for the big struct test of all supported
 	// types.
 	structTestIn := []byte{
@@ -276,7 +283,7 @@ func TestUnmarshal(t *testing.T) {
 		// map[string]uint32
 		{[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x04, 0x6D, 0x61, 0x70, 0x31, 0x00, 0x00, 0x00, 0x01},
 			map[string]uint32{"map1": 1}, 16, nil},
-		// Expected Failures -- not enough bytes in  length, 1 map
+		// Expected Failures -- not enough bytes in length, 1 map
 		// element no extra bytes, 1 map element not enough bytes for
 		// key, 1 map element not enough bytes for value.
 		{[]byte{0x00, 0x00, 0x00}, map[string]uint32{}, 3, &UnmarshalError{ErrorCode: ErrIO}},
@@ -294,31 +301,47 @@ func TestUnmarshal(t *testing.T) {
 
 		// struct - XDR Structure -- test struct contains all supported types
 		{structTestIn, structTestWant, len(structTestIn), nil},
+
+		// Expected errors
+		{nil, nilInterface, 0, &UnmarshalError{ErrorCode: ErrNilInterface}},
+		{nil, &nilInterface, 0, &UnmarshalError{ErrorCode: ErrNilInterface}},
+		{nil, testChan, 0, &UnmarshalError{ErrorCode: ErrUnsupportedType}},
+		{nil, &testChan, 0, &UnmarshalError{ErrorCode: ErrUnsupportedType}},
+		{nil, testFunc, 0, &UnmarshalError{ErrorCode: ErrUnsupportedType}},
+		{nil, &testFunc, 0, &UnmarshalError{ErrorCode: ErrUnsupportedType}},
+		{nil, testComplex64, 0, &UnmarshalError{ErrorCode: ErrUnsupportedType}},
+		{nil, &testComplex64, 0, &UnmarshalError{ErrorCode: ErrUnsupportedType}},
+		{nil, testComplex128, 0, &UnmarshalError{ErrorCode: ErrUnsupportedType}},
+		{nil, &testComplex128, 0, &UnmarshalError{ErrorCode: ErrUnsupportedType}},
 	}
 
 	for i, test := range tests {
-		// Create a new pointer to the appropriate type
-		want := reflect.New(reflect.TypeOf(test.wantVal)).Interface()
+		// Create a new pointer to the appropriate type.
+		var want interface{}
+		if test.wantVal != nil {
+			wvt := reflect.TypeOf(test.wantVal)
+			want = reflect.New(wvt).Interface()
+		}
 		n, err := Unmarshal(bytes.NewReader(test.in), want)
 
 		// First ensure the number of bytes read is the expected value.
 		// This should be accurate even when an error occurs.
 		if n != test.wantN {
-			t.Errorf("UnmarshalReader #%d bytes read got: %v want: %v\n",
+			t.Errorf("Unmarshal #%d bytes read got: %v want: %v\n",
 				i, n, test.wantN)
 			continue
 		}
 
 		// Next check for the expected error.
 		if reflect.TypeOf(err) != reflect.TypeOf(test.err) {
-			t.Errorf("UnmarshalReader #%d failed to detect error - got: %v <%T> want: %T",
+			t.Errorf("Unmarshal #%d failed to detect error - got: %v <%T> want: %T",
 				i, err, err, test.err)
 			continue
 		}
 		if rerr, ok := err.(*UnmarshalError); ok {
 			if terr, ok := test.err.(*UnmarshalError); ok {
 				if rerr.ErrorCode != terr.ErrorCode {
-					t.Errorf("UnmarshalReader #%d failed to detect error code - got: %v want: %v",
+					t.Errorf("Unmarshal #%d failed to detect error code - got: %v want: %v",
 						i, rerr.ErrorCode, terr.ErrorCode)
 					continue
 				}
@@ -330,7 +353,7 @@ func TestUnmarshal(t *testing.T) {
 		// Finally, ensure the read value is the expected one.
 		wantElem := reflect.Indirect(reflect.ValueOf(want)).Interface()
 		if !reflect.DeepEqual(wantElem, test.wantVal) {
-			t.Errorf("UnmarshalReader #%d got: %v want: %v\n", i, wantElem, test.wantVal)
+			t.Errorf("Unmarshal #%d got: %v want: %v\n", i, wantElem, test.wantVal)
 			continue
 		}
 	}

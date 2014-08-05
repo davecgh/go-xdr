@@ -58,6 +58,37 @@ type allTypesTest struct {
 	S time.Time
 }
 
+// testExpectedURet is a convenience method to test an expected number
+// of bytes read and error for an unmarshal.
+func testExpectedURet(t *testing.T, name string, n, wantN int, err, wantErr error) bool {
+	// First ensure the number of bytes read is the expected value.  The
+	// byes read should be accurate even when an error occurs.
+	if n != wantN {
+		t.Errorf("%s: unexpected num bytes read - got: %v want: %v\n",
+			name, n, wantN)
+		return false
+	}
+
+	// Next check for the expected error.
+	if reflect.TypeOf(err) != reflect.TypeOf(wantErr) {
+		t.Errorf("%s: failed to detect error - got: %v <%[2]T> want: %T",
+			name, err, wantErr)
+		return false
+	}
+	if rerr, ok := err.(*UnmarshalError); ok {
+		if werr, ok := wantErr.(*UnmarshalError); ok {
+			if rerr.ErrorCode != werr.ErrorCode {
+				t.Errorf("%s: failed to detect error code - "+
+					"got: %v want: %v", name,
+					rerr.ErrorCode, werr.ErrorCode)
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
 // TestUnmarshal ensures the Unmarshal function works properly with all types.
 func TestUnmarshal(t *testing.T) {
 	// Variables for various unsupported Unmarshal types.
@@ -124,6 +155,12 @@ func TestUnmarshal(t *testing.T) {
 		&subTest{"bar", 3},                      // Q
 		map[string]uint32{"map1": 1, "map2": 2}, // R
 		time.Unix(1396581888, 0).UTC(),          // S
+	}
+
+	// opaqueStruct is used to test handling of uint8 slices and arrays.
+	type opaqueStruct struct {
+		Slice []uint8  `xdropaque:"false"`
+		Array [1]uint8 `xdropaque:"false"`
 	}
 
 	tests := []struct {
@@ -301,6 +338,14 @@ func TestUnmarshal(t *testing.T) {
 
 		// struct - XDR Structure -- test struct contains all supported types
 		{structTestIn, structTestWant, len(structTestIn), nil},
+		{[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02},
+			opaqueStruct{[]uint8{1}, [1]uint8{2}}, 12, nil},
+		// Expected Failures -- normal struct not enough bytes, non
+		// opaque data not enough bytes for slice, non opaque data not
+		// enough bytes for slice.
+		{[]byte{0x00, 0x00}, allTypesTest{}, 2, &UnmarshalError{ErrorCode: ErrIO}},
+		{[]byte{0x00, 0x00, 0x00}, opaqueStruct{}, 3, &UnmarshalError{ErrorCode: ErrIO}},
+		{[]byte{0x00, 0x00, 0x00, 0x00, 0x00}, opaqueStruct{}, 5, &UnmarshalError{ErrorCode: ErrIO}},
 
 		// Expected errors
 		{nil, nilInterface, 0, &UnmarshalError{ErrorCode: ErrNilInterface}},
@@ -316,6 +361,22 @@ func TestUnmarshal(t *testing.T) {
 	}
 
 	for i, test := range tests {
+		// Attempt to unmarshal to a non-pointer version of each
+		// positive test type to ensure the appropriate error is
+		// returned.
+		if test.err == nil && test.wantVal != nil {
+			testName := fmt.Sprintf("Unmarshal #%d (non-pointer)", i)
+			wantErr := &UnmarshalError{ErrorCode: ErrBadArguments}
+
+			wvt := reflect.TypeOf(test.wantVal)
+			want := reflect.New(wvt).Elem().Interface()
+			n, err := Unmarshal(bytes.NewReader(test.in), want)
+			if !testExpectedURet(t, testName, n, 0, err, wantErr) {
+				continue
+			}
+		}
+
+		testName := fmt.Sprintf("Unmarshal #%d", i)
 		// Create a new pointer to the appropriate type.
 		var want interface{}
 		if test.wantVal != nil {
@@ -324,36 +385,20 @@ func TestUnmarshal(t *testing.T) {
 		}
 		n, err := Unmarshal(bytes.NewReader(test.in), want)
 
-		// First ensure the number of bytes read is the expected value.
-		// This should be accurate even when an error occurs.
-		if n != test.wantN {
-			t.Errorf("Unmarshal #%d bytes read got: %v want: %v\n",
-				i, n, test.wantN)
+		// First ensure the number of bytes read is the expected value
+		// and the error is the expected one.
+		if !testExpectedURet(t, testName, n, test.wantN, err, test.err) {
 			continue
 		}
-
-		// Next check for the expected error.
-		if reflect.TypeOf(err) != reflect.TypeOf(test.err) {
-			t.Errorf("Unmarshal #%d failed to detect error - got: %v <%T> want: %T",
-				i, err, err, test.err)
+		if test.err != nil {
 			continue
-		}
-		if rerr, ok := err.(*UnmarshalError); ok {
-			if terr, ok := test.err.(*UnmarshalError); ok {
-				if rerr.ErrorCode != terr.ErrorCode {
-					t.Errorf("Unmarshal #%d failed to detect error code - got: %v want: %v",
-						i, rerr.ErrorCode, terr.ErrorCode)
-					continue
-				}
-				// Got expected error.  Move on to the next test.
-				continue
-			}
 		}
 
 		// Finally, ensure the read value is the expected one.
 		wantElem := reflect.Indirect(reflect.ValueOf(want)).Interface()
 		if !reflect.DeepEqual(wantElem, test.wantVal) {
-			t.Errorf("Unmarshal #%d got: %v want: %v\n", i, wantElem, test.wantVal)
+			t.Errorf("%s: unexpected result - got: %v want: %v\n",
+				testName, wantElem, test.wantVal)
 			continue
 		}
 	}
@@ -534,36 +579,107 @@ func TestDecoder(t *testing.T) {
 			continue
 		}
 
-		// First ensure the number of bytes read is the expected value.
-		// This should be accurate even when an error occurs.
-		if n != test.wantN {
-			t.Errorf("%v #%d bytes read got: %v want: %v\n", test.f,
-				i, n, test.wantN)
+		// First ensure the number of bytes read is the expected value
+		// and the error is the expected one.
+		testName := fmt.Sprintf("%v #%d", test.f, i)
+		if !testExpectedURet(t, testName, n, test.wantN, err, test.err) {
 			continue
 		}
-
-		// Next check for the expected error.
-		if reflect.TypeOf(err) != reflect.TypeOf(test.err) {
-			t.Errorf("%v #%d failed to detect error - got: %v <%T> want: %T",
-				test.f, i, err, err, test.err)
+		if test.err != nil {
 			continue
-		}
-		if rerr, ok := err.(*UnmarshalError); ok {
-			if terr, ok := test.err.(*UnmarshalError); ok {
-				if rerr.ErrorCode != terr.ErrorCode {
-					t.Errorf("%v #%d failed to detect error code - got: %v want: %v",
-						test.f, i, rerr.ErrorCode, terr.ErrorCode)
-					continue
-				}
-				// Got expected error.  Move on to the next test.
-				continue
-			}
 		}
 
 		// Finally, ensure the read value is the expected one.
 		if !reflect.DeepEqual(rv, test.wantVal) {
-			t.Errorf("%v #%d got: %v want: %v\n", test.f, i, rv, test.wantVal)
+			t.Errorf("%s: unexpected result - got: %v want: %v\n",
+				testName, rv, test.wantVal)
 			continue
+		}
+	}
+}
+
+// TestUnmarshalCorners ensures the Unmarshal function properly handles various
+// cases not already covered by the other tests.
+func TestUnmarshalCorners(t *testing.T) {
+	buf := []byte{
+		0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+		0x00, 0x00, 0x00, 0x02,
+	}
+
+	// Ensure unmarshal to unsettable pointer returns the expected error.
+	testName := "Unmarshal to unsettable pointer"
+	var i32p *int32
+	expectedN := 0
+	expectedErr := error(&UnmarshalError{ErrorCode: ErrNotSettable})
+	n, err := Unmarshal(bytes.NewReader(buf), i32p)
+	testExpectedURet(t, testName, n, expectedN, err, expectedErr)
+
+	// Ensure unmarshal to indirected unsettable pointer returns the
+	// expected error.
+	testName = "Unmarshal to indirected unsettable pointer"
+	ii32p := interface{}(i32p)
+	expectedN = 0
+	expectedErr = &UnmarshalError{ErrorCode: ErrNotSettable}
+	n, err = Unmarshal(bytes.NewReader(buf), &ii32p)
+	testExpectedURet(t, testName, n, expectedN, err, expectedErr)
+
+	// Ensure unmarshal to embedded unsettable interface value returns the
+	// expected error.
+	testName = "Unmarshal to embedded unsettable interface value"
+	var i32 int32
+	ii32 := interface{}(i32)
+	expectedN = 0
+	expectedErr = &UnmarshalError{ErrorCode: ErrNotSettable}
+	n, err = Unmarshal(bytes.NewReader(buf), &ii32)
+	testExpectedURet(t, testName, n, expectedN, err, expectedErr)
+
+	// Ensure unmarshal to embedded interface value works properly.
+	testName = "Unmarshal to embedded interface value"
+	ii32vp := interface{}(&i32)
+	expectedN = 4
+	expectedErr = nil
+	ii32vpr := int32(1)
+	expectedVal := interface{}(&ii32vpr)
+	n, err = Unmarshal(bytes.NewReader(buf), &ii32vp)
+	if testExpectedURet(t, testName, n, expectedN, err, expectedErr) {
+		if !reflect.DeepEqual(ii32vp, expectedVal) {
+			t.Errorf("%s: unexpected result - got: %v want: %v\n",
+				testName, ii32vp, expectedVal)
+		}
+	}
+
+	// Ensure unmarshal to a slice with a cap and 0 length adjusts the
+	// length properly.
+	testName = "Unmarshal to capped slice"
+	cappedSlice := make([]bool, 0, 1)
+	expectedN = 8
+	expectedErr = nil
+	expectedVal = []bool{true}
+	n, err = Unmarshal(bytes.NewReader(buf), &cappedSlice)
+	if testExpectedURet(t, testName, n, expectedN, err, expectedErr) {
+		if !reflect.DeepEqual(cappedSlice, expectedVal) {
+			t.Errorf("%s: unexpected result - got: %v want: %v\n",
+				testName, cappedSlice, expectedVal)
+		}
+	}
+
+	// Ensure unmarshal to struct with both exported and unexported fields
+	// skips the unexported fields but still unmarshals to the exported
+	// fields.
+	type unexportedStruct struct {
+		unexported int
+		Exported   int
+	}
+	testName = "Unmarshal to struct with exported and unexported fields"
+	var tstruct unexportedStruct
+	expectedN = 4
+	expectedErr = nil
+	expectedVal = unexportedStruct{0, 1}
+	n, err = Unmarshal(bytes.NewReader(buf), &tstruct)
+	if testExpectedURet(t, testName, n, expectedN, err, expectedErr) {
+		if !reflect.DeepEqual(tstruct, expectedVal) {
+			t.Errorf("%s: unexpected result - got: %v want: %v\n",
+				testName, tstruct, expectedVal)
 		}
 	}
 }

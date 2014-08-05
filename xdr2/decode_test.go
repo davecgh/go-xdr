@@ -335,6 +335,10 @@ func TestUnmarshal(t *testing.T) {
 			0x2d, 0x30, 0x34, 0x2d, 0x30, 0x34, 0x54, 0x30,
 			0x33, 0x3a, 0x32, 0x34, 0x3a, 0x34, 0x38, 0x5a,
 		}, time.Unix(1396581888, 0).UTC(), 24, nil},
+		// Expected Failures -- not enough bytes, improperly formatted
+		// time
+		{[]byte{0x00, 0x00, 0x00}, time.Time{}, 3, &UnmarshalError{ErrorCode: ErrIO}},
+		{[]byte{0x00, 0x00, 0x00, 0x00}, time.Time{}, 4, &UnmarshalError{ErrorCode: ErrParseTime}},
 
 		// struct - XDR Structure -- test struct contains all supported types
 		{structTestIn, structTestWant, len(structTestIn), nil},

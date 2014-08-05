@@ -58,6 +58,11 @@ const (
 	// will be available via the Err field of the MarshalError or
 	// UnmarshalError struct.
 	ErrIO
+
+	// ErrParseTime indicates an error was encountered while parsing an
+	// RFC3339 formatted time value.  The actual underlying error will be
+	// available via the Err field of the UnmarshalError struct.
+	ErrParseTime
 )
 
 // Map of ErrorCode values back to their constant names for pretty printing.
@@ -69,6 +74,7 @@ var errorCodeStrings = map[ErrorCode]string{
 	ErrOverflow:        "ErrOverflow",
 	ErrNilInterface:    "ErrNilInterface",
 	ErrIO:              "ErrIO",
+	ErrParseTime:       "ErrParseTime",
 }
 
 // String returns the ErrorCode as a human-readable name.
@@ -94,7 +100,7 @@ type UnmarshalError struct {
 // Error satisfies the error interface and prints human-readable errors.
 func (e *UnmarshalError) Error() string {
 	switch e.ErrorCode {
-	case ErrIO, ErrBadEnumValue, ErrOverflow:
+	case ErrBadEnumValue, ErrOverflow, ErrIO, ErrParseTime:
 		return fmt.Sprintf("xdr:%s: %s - read: '%v'", e.Func,
 			e.Description, e.Value)
 	}

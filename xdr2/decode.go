@@ -683,6 +683,8 @@ func (d *Decoder) decode(v reflect.Value) (int, error) {
 		}
 		ttv, err := time.Parse(time.RFC3339, timeString)
 		if err != nil {
+			err := unmarshalError("decode", ErrParseTime,
+				err.Error(), timeString, err)
 			return n, err
 		}
 		ve.Set(reflect.ValueOf(ttv))

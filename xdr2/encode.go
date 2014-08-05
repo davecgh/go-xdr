@@ -643,12 +643,12 @@ func (enc *Encoder) encode(v reflect.Value) (int, error) {
 
 // indirect dereferences pointers until it reaches a non-pointer.  This allows
 // transparent encoding through arbitrary levels of indirection.
-func (enc *Encoder) indirect(v reflect.Value) (rv reflect.Value) {
-	rv = v
+func (enc *Encoder) indirect(v reflect.Value) reflect.Value {
+	rv := v
 	for rv.Kind() == reflect.Ptr {
 		rv = rv.Elem()
 	}
-	return
+	return rv
 }
 
 // NewEncoder returns an object that can be used to manually choose fields to

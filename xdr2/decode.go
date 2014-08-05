@@ -814,24 +814,24 @@ func (d *Decoder) decode(v reflect.Value) (int, error) {
 // indirect dereferences pointers allocating them as needed until it reaches
 // a non-pointer.  This allows transparent decoding through arbitrary levels
 // of indirection.
-func (d *Decoder) indirect(v reflect.Value) (rv reflect.Value, err error) {
-	rv = v
+func (d *Decoder) indirect(v reflect.Value) (reflect.Value, error) {
+	rv := v
 	for rv.Kind() == reflect.Ptr {
 		// Allocate pointer if needed.
 		isNil := rv.IsNil()
 		if isNil && !rv.CanSet() {
 			msg := fmt.Sprintf("unable to allocate pointer for '%v'",
 				rv.Type().String())
-			err = unmarshalError("indirect", ErrNotSettable, msg,
+			err := unmarshalError("indirect", ErrNotSettable, msg,
 				nil, nil)
-			return
+			return rv, err
 		}
 		if isNil {
 			rv.Set(reflect.New(rv.Type().Elem()))
 		}
 		rv = rv.Elem()
 	}
-	return
+	return rv, nil
 }
 
 // NewDecoder returns a Decoder that can be used to manually decode XDR data

@@ -651,6 +651,14 @@ func TestUnmarshalCorners(t *testing.T) {
 		}
 	}
 
+	// Ensure unmarshal of an invalid reflect value returns the expected
+	// error.
+	testName = "Unmarshal invalid reflect value"
+	expectedN = 0
+	expectedErr = error(&UnmarshalError{ErrorCode: ErrUnsupportedType})
+	n, err = TstDecode(bytes.NewReader(buf))(reflect.Value{})
+	testExpectedURet(t, testName, n, expectedN, err, expectedErr)
+
 	// Ensure unmarshal to a slice with a cap and 0 length adjusts the
 	// length properly.
 	testName = "Unmarshal to capped slice"

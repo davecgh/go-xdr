@@ -554,3 +554,27 @@ func TestEncoder(t *testing.T) {
 		}
 	}
 }
+
+// TestMarshalCorners ensures the Marshal function properly handles various
+// cases not already covered by the other tests.
+func TestMarshalCorners(t *testing.T) {
+	// Ensure marshal of a struct with both exported and unexported fields
+	// skips the unexported fields but still marshals to the exported
+	// fields.
+	type unexportedStruct struct {
+		unexported int
+		Exported   int
+	}
+	testName := "Marshal struct with exported and unexported fields"
+	tstruct := unexportedStruct{0, 1}
+	expectedN := 4
+	expectedErr := error(nil)
+	expectedVal := []byte{0x00, 0x00, 0x00, 0x01}
+	data := newFixedWriter(expectedN)
+	n, err := Marshal(data, tstruct)
+	testExpectedMRet(t, testName, n, expectedN, err, expectedErr)
+	if !reflect.DeepEqual(data.Bytes(), expectedVal) {
+		t.Errorf("%s: unexpected result - got: %x want: %x\n",
+			testName, data.Bytes(), expectedVal)
+	}
+}

@@ -27,6 +27,37 @@ import (
 	. "github.com/davecgh/go-xdr/xdr2"
 )
 
+// testExpectedMRet is a convenience method to test an expected number of bytes
+// written and error for a marshal.
+func testExpectedMRet(t *testing.T, name string, n, wantN int, err, wantErr error) bool {
+	// First ensure the number of bytes written is the expected value.  The
+	// bytes read should be accurate even when an error occurs.
+	if n != wantN {
+		t.Errorf("%s: unexpected num bytes written - got: %v want: %v\n",
+			name, n, wantN)
+		return false
+	}
+
+	// Next check for the expected error.
+	if reflect.TypeOf(err) != reflect.TypeOf(wantErr) {
+		t.Errorf("%s: failed to detect error - got: %v <%[2]T> want: %T",
+			name, err, wantErr)
+		return false
+	}
+	if rerr, ok := err.(*MarshalError); ok {
+		if werr, ok := wantErr.(*MarshalError); ok {
+			if rerr.ErrorCode != werr.ErrorCode {
+				t.Errorf("%s: failed to detect error code - "+
+					"got: %v want: %v", name,
+					rerr.ErrorCode, werr.ErrorCode)
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
 // TestMarshal ensures the Marshal function works properly with all types.
 func TestMarshal(t *testing.T) {
 	// Variables for various unsupported Marshal types.
@@ -219,6 +250,7 @@ func TestMarshal(t *testing.T) {
 		// Expected errors
 		{nilInterface, nil, 0, &MarshalError{ErrorCode: ErrNilInterface}},
 		{&nilInterface, nil, 0, &MarshalError{ErrorCode: ErrNilInterface}},
+		{(*interface{})(nil), nil, 0, &MarshalError{ErrorCode: ErrBadArguments}},
 		{testChan, nil, 0, &MarshalError{ErrorCode: ErrUnsupportedType}},
 		{&testChan, nil, 0, &MarshalError{ErrorCode: ErrUnsupportedType}},
 		{testFunc, nil, 0, &MarshalError{ErrorCode: ErrUnsupportedType}},
@@ -235,37 +267,24 @@ func TestMarshal(t *testing.T) {
 		n, err := Marshal(&data, test.in)
 
 		// First ensure the number of bytes written is the expected
-		// value.  This should be accurate even when an error occurs.
-		if n != test.wantN {
-			t.Errorf("MarshalWriter #%d bytes written got: %v want: %v\n",
-				i, n, test.wantN)
+		// value and the error is the expected one.
+		testName := fmt.Sprintf("Marshal #%d", i)
+		if !testExpectedURet(t, testName, n, test.wantN, err, test.err) {
 			continue
 		}
-
-		if reflect.TypeOf(err) != reflect.TypeOf(test.err) {
-			t.Errorf("MarshalWriter #%d failed to detect error - got: %v <%T> want: %T",
-				i, err, err, test.err)
+		if test.err != nil {
 			continue
-		}
-		if rerr, ok := err.(*MarshalError); ok {
-			if terr, ok := test.err.(*MarshalError); ok {
-				if rerr.ErrorCode != terr.ErrorCode {
-					t.Errorf("MarshalWriter #%d failed to detect error code - got: %v want: %v",
-						i, rerr.ErrorCode, terr.ErrorCode)
-					continue
-				}
-				// Got expected error.  Move on to the next test.
-				continue
-			}
 		}
 
 		rv := data.Bytes()
 		if len(rv) != len(test.wantBytes) {
-			t.Errorf("MarshalWriter #%d len got: %v want: %v\n", i, len(rv), len(test.wantBytes))
+			t.Errorf("%s: unexpected len - got: %v want: %v\n",
+				testName, len(rv), len(test.wantBytes))
 			continue
 		}
 		if !reflect.DeepEqual(rv, test.wantBytes) {
-			t.Errorf("MarshalWriter #%d got: %v want: %v\n", i, rv, test.wantBytes)
+			t.Errorf("%s: unexpected result - got: %v want: %v\n",
+				testName, rv, test.wantBytes)
 			continue
 		}
 	}
@@ -441,39 +460,25 @@ func TestEncoder(t *testing.T) {
 		}
 
 		// First ensure the number of bytes written is the expected
-		// value.  This should be accurate even when an error occurs.
-		if n != test.wantN {
-			t.Errorf("%v #%d bytes written got: %v want: %v\n",
-				test.f, i, n, test.wantN)
+		// value and the error is the expected one.
+		testName := fmt.Sprintf("%v #%d", test.f, i)
+		if !testExpectedURet(t, testName, n, test.wantN, err, test.err) {
 			continue
 		}
-
-		// Next check for the expected error.
-		if reflect.TypeOf(err) != reflect.TypeOf(test.err) {
-			t.Errorf("%v #%d failed to detect error - got: %v <%T> want: %T",
-				test.f, i, err, err, test.err)
+		if test.err != nil {
 			continue
-		}
-		if rerr, ok := err.(*MarshalError); ok {
-			if terr, ok := test.err.(*MarshalError); ok {
-				if rerr.ErrorCode != terr.ErrorCode {
-					t.Errorf("%v #%d failed to detect error code - got: %v want: %v",
-						test.f, i, rerr.ErrorCode, terr.ErrorCode)
-					continue
-				}
-				// Got expected error.  Move on to the next test.
-				continue
-			}
 		}
 
 		// Finally, ensure the written bytes are what is expected.
 		rv := data.Bytes()
 		if len(rv) != len(test.wantBytes) {
-			t.Errorf("%v #%d len got: %v want: %v\n", test.f, i, len(rv), len(test.wantBytes))
+			t.Errorf("%s: unexpected len - got: %v want: %v\n",
+				testName, len(rv), len(test.wantBytes))
 			continue
 		}
 		if !reflect.DeepEqual(rv, test.wantBytes) {
-			t.Errorf("%v #%d got: %v want: %v\n", test.f, i, rv, test.wantBytes)
+			t.Errorf("%s: unexpected result - got: %v want: %v\n",
+				testName, rv, test.wantBytes)
 			continue
 		}
 	}

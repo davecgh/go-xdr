@@ -58,8 +58,8 @@ type allTypesTest struct {
 	S time.Time
 }
 
-// testExpectedURet is a convenience method to test an expected number
-// of bytes read and error for an unmarshal.
+// testExpectedURet is a convenience method to test an expected number of bytes
+// read and error for an unmarshal.
 func testExpectedURet(t *testing.T, name string, n, wantN int, err, wantErr error) bool {
 	// First ensure the number of bytes read is the expected value.  The
 	// byes read should be accurate even when an error occurs.

@@ -293,7 +293,6 @@ func TestUnmarshal(t *testing.T) {
 		// larger than allowed, and data larger than available bytes.
 		{[]byte{0x00, 0x00, 0xFF}, []byte{}, 3, &UnmarshalError{ErrorCode: ErrIO}},
 		{[]byte{0xFF, 0xFF, 0xFF, 0xFF}, []byte{}, 4, &UnmarshalError{ErrorCode: ErrOverflow}},
-		{[]byte{0x7F, 0xFF, 0xFF, 0xFD}, []byte{}, 4, &UnmarshalError{ErrorCode: ErrOverflow}},
 		{[]byte{0x00, 0x00, 0x00, 0xFF}, []byte{}, 4, &UnmarshalError{ErrorCode: ErrIO}},
 
 		// [#]byte - XDR Fixed Opaque

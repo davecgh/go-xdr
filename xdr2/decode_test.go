@@ -617,6 +617,13 @@ func TestUnmarshalCorners(t *testing.T) {
 	n, err := Unmarshal(bytes.NewReader(buf), i32p)
 	testExpectedURet(t, testName, n, expectedN, err, expectedErr)
 
+	// Ensure decode of unsettable pointer returns the expected error.
+	testName = "Decode to unsettable pointer"
+	expectedN = 0
+	expectedErr = &UnmarshalError{ErrorCode: ErrNotSettable}
+	n, err = TstDecode(bytes.NewReader(buf))(reflect.ValueOf(i32p))
+	testExpectedURet(t, testName, n, expectedN, err, expectedErr)
+
 	// Ensure unmarshal to indirected unsettable pointer returns the
 	// expected error.
 	testName = "Unmarshal to indirected unsettable pointer"
@@ -651,9 +658,9 @@ func TestUnmarshalCorners(t *testing.T) {
 		}
 	}
 
-	// Ensure unmarshal of an invalid reflect value returns the expected
+	// Ensure decode of an invalid reflect value returns the expected
 	// error.
-	testName = "Unmarshal invalid reflect value"
+	testName = "Decode invalid reflect value"
 	expectedN = 0
 	expectedErr = error(&UnmarshalError{ErrorCode: ErrUnsupportedType})
 	n, err = TstDecode(bytes.NewReader(buf))(reflect.Value{})
@@ -693,4 +700,27 @@ func TestUnmarshalCorners(t *testing.T) {
 				testName, tstruct, expectedVal)
 		}
 	}
+
+	// Ensure decode to struct with unsettable fields return expected error.
+	type unsettableStruct struct {
+		Exported int
+	}
+	testName = "Decode to struct with unsettable fields"
+	var ustruct unsettableStruct
+	expectedN = 0
+	expectedErr = error(&UnmarshalError{ErrorCode: ErrNotSettable})
+	n, err = TstDecode(bytes.NewReader(buf))(reflect.ValueOf(ustruct))
+	testExpectedURet(t, testName, n, expectedN, err, expectedErr)
+
+	// Ensure decode to struct with unsettable pointer fields return
+	// expected error.
+	type unsettablePointerStruct struct {
+		Exported *int
+	}
+	testName = "Decode to struct with unsettable pointer fields"
+	var upstruct unsettablePointerStruct
+	expectedN = 0
+	expectedErr = error(&UnmarshalError{ErrorCode: ErrNotSettable})
+	n, err = TstDecode(bytes.NewReader(buf))(reflect.ValueOf(upstruct))
+	testExpectedURet(t, testName, n, expectedN, err, expectedErr)
 }

@@ -558,9 +558,9 @@ func TestEncoder(t *testing.T) {
 // TestMarshalCorners ensures the Marshal function properly handles various
 // cases not already covered by the other tests.
 func TestMarshalCorners(t *testing.T) {
-	// Ensure marshal of an invalid reflect value returns the expected
+	// Ensure encode of an invalid reflect value returns the expected
 	// error.
-	testName := "Marshal invalid reflect value"
+	testName := "Encode invalid reflect value"
 	expectedN := 0
 	expectedErr := error(&MarshalError{ErrorCode: ErrUnsupportedType})
 	expectedVal := []byte{}

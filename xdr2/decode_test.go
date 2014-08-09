@@ -58,6 +58,12 @@ type allTypesTest struct {
 	S time.Time
 }
 
+// opaqueStruct is used to test handling of uint8 slices and arrays.
+type opaqueStruct struct {
+	Slice []uint8  `xdropaque:"false"`
+	Array [1]uint8 `xdropaque:"false"`
+}
+
 // testExpectedURet is a convenience method to test an expected number of bytes
 // read and error for an unmarshal.
 func testExpectedURet(t *testing.T, name string, n, wantN int, err, wantErr error) bool {
@@ -155,12 +161,6 @@ func TestUnmarshal(t *testing.T) {
 		&subTest{"bar", 3},                      // Q
 		map[string]uint32{"map1": 1, "map2": 2}, // R
 		time.Unix(1396581888, 0).UTC(),          // S
-	}
-
-	// opaqueStruct is used to test handling of uint8 slices and arrays.
-	type opaqueStruct struct {
-		Slice []uint8  `xdropaque:"false"`
-		Array [1]uint8 `xdropaque:"false"`
 	}
 
 	tests := []struct {

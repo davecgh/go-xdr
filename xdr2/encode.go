@@ -436,7 +436,7 @@ func (enc *Encoder) encodeFixedArray(v reflect.Value, ignoreOpaque bool) (int, e
 // 	Unsigned integer length followed by individually XDR encoded array elements
 func (enc *Encoder) encodeArray(v reflect.Value, ignoreOpaque bool) (int, error) {
 	numItems := uint32(v.Len())
-	n, err := enc.encode(reflect.ValueOf(numItems))
+	n, err := enc.EncodeUint(numItems)
 	if err != nil {
 		return n, err
 	}

@@ -17,7 +17,6 @@
 package xdr_test
 
 import (
-	"bytes"
 	"fmt"
 	"math"
 	"reflect"
@@ -399,18 +398,23 @@ func TestEncoder(t *testing.T) {
 		// Bool
 		{fEncodeBool, false, []byte{0x00, 0x00, 0x00, 0x00}, 4, nil},
 		{fEncodeBool, true, []byte{0x00, 0x00, 0x00, 0x01}, 4, nil},
+		// Expected Failure -- Short write
+		{fEncodeBool, true, []byte{0x00, 0x00, 0x00}, 3, &MarshalError{ErrorCode: ErrIO}},
 
 		// Double
 		{fEncodeDouble, float64(0), []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, 8, nil},
 		{fEncodeDouble, float64(3.141592653589793), []byte{0x40, 0x09, 0x21, 0xfb, 0x54, 0x44, 0x2d, 0x18}, 8, nil},
 		{fEncodeDouble, float64(math.Inf(-1)), []byte{0xFF, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, 8, nil},
 		{fEncodeDouble, float64(math.Inf(0)), []byte{0x7F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, 8, nil},
+		// Expected Failure -- Short write
+		{fEncodeDouble, float64(3.141592653589793), []byte{0x40, 0x09, 0x21, 0xfb, 0x54, 0x44, 0x2d}, 7, &MarshalError{ErrorCode: ErrIO}},
 
 		// Enum
 		{fEncodeEnum, int32(0), []byte{0x00, 0x00, 0x00, 0x00}, 4, nil},
 		{fEncodeEnum, int32(1), []byte{0x00, 0x00, 0x00, 0x01}, 4, nil},
-		{fEncodeEnum, int32(2), nil, 0, &MarshalError{ErrorCode: ErrBadEnumValue}},
-		{fEncodeEnum, int32(1234), nil, 0, &MarshalError{ErrorCode: ErrBadEnumValue}},
+		// Expected Failures -- Invalid enum values
+		{fEncodeEnum, int32(2), []byte{}, 0, &MarshalError{ErrorCode: ErrBadEnumValue}},
+		{fEncodeEnum, int32(1234), []byte{}, 0, &MarshalError{ErrorCode: ErrBadEnumValue}},
 
 		// FixedOpaque
 		{fEncodeFixedOpaque, []byte{0x01}, []byte{0x01, 0x00, 0x00, 0x00}, 4, nil},
@@ -418,6 +422,8 @@ func TestEncoder(t *testing.T) {
 		{fEncodeFixedOpaque, []byte{0x01, 0x02, 0x03}, []byte{0x01, 0x02, 0x03, 0x00}, 4, nil},
 		{fEncodeFixedOpaque, []byte{0x01, 0x02, 0x03, 0x04}, []byte{0x01, 0x02, 0x03, 0x04}, 4, nil},
 		{fEncodeFixedOpaque, []byte{0x01, 0x02, 0x03, 0x04, 0x05}, []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x00, 0x00, 0x00}, 8, nil},
+		// Expected Failure -- Short write
+		{fEncodeFixedOpaque, []byte{0x01}, []byte{0x01, 0x00, 0x00}, 3, &MarshalError{ErrorCode: ErrIO}},
 
 		// Float
 		{fEncodeFloat, float32(0), []byte{0x00, 0x00, 0x00, 0x00}, 4, nil},
@@ -425,6 +431,8 @@ func TestEncoder(t *testing.T) {
 		{fEncodeFloat, float32(1234567.0), []byte{0x49, 0x96, 0xB4, 0x38}, 4, nil},
 		{fEncodeFloat, float32(math.Inf(-1)), []byte{0xFF, 0x80, 0x00, 0x00}, 4, nil},
 		{fEncodeFloat, float32(math.Inf(0)), []byte{0x7F, 0x80, 0x00, 0x00}, 4, nil},
+		// Expected Failure -- Short write
+		{fEncodeFloat, float32(3.14), []byte{0x40, 0x48, 0xF5}, 3, &MarshalError{ErrorCode: ErrIO}},
 
 		// Hyper
 		{fEncodeHyper, int64(0), []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, 8, nil},
@@ -433,6 +441,8 @@ func TestEncoder(t *testing.T) {
 		{fEncodeHyper, int64(9223372036854775807), []byte{0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 8, nil},
 		{fEncodeHyper, int64(-1), []byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 8, nil},
 		{fEncodeHyper, int64(-9223372036854775808), []byte{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, 8, nil},
+		// Expected Failure -- Short write
+		{fEncodeHyper, int64(-9223372036854775808), []byte{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, 7, &MarshalError{ErrorCode: ErrIO}},
 
 		// Int
 		{fEncodeInt, int32(0), []byte{0x00, 0x00, 0x00, 0x00}, 4, nil},
@@ -440,15 +450,23 @@ func TestEncoder(t *testing.T) {
 		{fEncodeInt, int32(2147483647), []byte{0x7F, 0xFF, 0xFF, 0xFF}, 4, nil},
 		{fEncodeInt, int32(-1), []byte{0xFF, 0xFF, 0xFF, 0xFF}, 4, nil},
 		{fEncodeInt, int32(-2147483648), []byte{0x80, 0x00, 0x00, 0x00}, 4, nil},
+		// Expected Failure -- Short write
+		{fEncodeInt, int32(2147483647), []byte{0x7F, 0xFF, 0xFF}, 3, &MarshalError{ErrorCode: ErrIO}},
 
 		// Opaque
 		{fEncodeOpaque, []byte{0x01}, []byte{0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00}, 8, nil},
 		{fEncodeOpaque, []byte{0x01, 0x02, 0x03}, []byte{0x00, 0x00, 0x00, 0x03, 0x01, 0x02, 0x03, 0x00}, 8, nil},
+		// Expected Failures -- Short write in length and payload
+		{fEncodeOpaque, []byte{0x01}, []byte{0x00, 0x00, 0x00}, 3, &MarshalError{ErrorCode: ErrIO}},
+		{fEncodeOpaque, []byte{0x01}, []byte{0x00, 0x00, 0x00, 0x01, 0x01}, 5, &MarshalError{ErrorCode: ErrIO}},
 
 		// String
 		{fEncodeString, "", []byte{0x00, 0x00, 0x00, 0x00}, 4, nil},
 		{fEncodeString, "xdr", []byte{0x00, 0x00, 0x00, 0x03, 0x78, 0x64, 0x72, 0x00}, 8, nil},
 		{fEncodeString, "τ=2π", []byte{0x00, 0x00, 0x00, 0x06, 0xCF, 0x84, 0x3D, 0x32, 0xCF, 0x80, 0x00, 0x00}, 12, nil},
+		// Expected Failures -- Short write in length and payload
+		{fEncodeString, "xdr", []byte{0x00, 0x00, 0x00}, 3, &MarshalError{ErrorCode: ErrIO}},
+		{fEncodeString, "xdr", []byte{0x00, 0x00, 0x00, 0x03, 0x78}, 5, &MarshalError{ErrorCode: ErrIO}},
 
 		// Uhyper
 		{fEncodeUhyper, uint64(0), []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, 8, nil},
@@ -456,11 +474,15 @@ func TestEncoder(t *testing.T) {
 		{fEncodeUhyper, uint64(1 << 42), []byte{0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00}, 8, nil},
 		{fEncodeUhyper, uint64(18446744073709551615), []byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 8, nil},
 		{fEncodeUhyper, uint64(9223372036854775808), []byte{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, 8, nil},
+		// Expected Failure -- Short write
+		{fEncodeUhyper, uint64(9223372036854775808), []byte{0x80}, 1, &MarshalError{ErrorCode: ErrIO}},
 
 		// Uint
 		{fEncodeUint, uint32(0), []byte{0x00, 0x00, 0x00, 0x00}, 4, nil},
 		{fEncodeUint, uint32(262144), []byte{0x00, 0x04, 0x00, 0x00}, 4, nil},
 		{fEncodeUint, uint32(4294967295), []byte{0xFF, 0xFF, 0xFF, 0xFF}, 4, nil},
+		// Expected Failure -- Short write
+		{fEncodeUint, uint32(262144), []byte{0x00, 0x04, 0x00}, 3, &MarshalError{ErrorCode: ErrIO}},
 	}
 
 	validEnums := make(map[int32]bool)
@@ -469,12 +491,11 @@ func TestEncoder(t *testing.T) {
 
 	var err error
 	var n int
-	var data bytes.Buffer
-	enc := NewEncoder(&data)
 
 	for i, test := range tests {
 		err = nil
-		data.Reset()
+		data := newFixedWriter(test.wantN)
+		enc := NewEncoder(data)
 		switch test.f {
 		case fEncodeBool:
 			in := test.in.(bool)
@@ -517,12 +538,7 @@ func TestEncoder(t *testing.T) {
 		// First ensure the number of bytes written is the expected
 		// value and the error is the expected one.
 		testName := fmt.Sprintf("%v #%d", test.f, i)
-		if !testExpectedMRet(t, testName, n, test.wantN, err, test.err) {
-			continue
-		}
-		if test.err != nil {
-			continue
-		}
+		testExpectedMRet(t, testName, n, test.wantN, err, test.err)
 
 		// Finally, ensure the written bytes are what is expected.
 		rv := data.Bytes()

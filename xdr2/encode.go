@@ -73,27 +73,8 @@ unsupported Go types, attempting to encode more opaque data than can be
 represented by a single opaque XDR entry, and exceeding max slice limitations.
 */
 func Marshal(w io.Writer, v interface{}) (int, error) {
-	if v == nil {
-		msg := "can't marshal nil interface"
-		err := marshalError("Marshal", ErrNilInterface, msg, nil, nil)
-		return 0, err
-	}
-
-	vv := reflect.ValueOf(v)
-	vve := vv
-	for vve.Kind() == reflect.Ptr {
-		if vve.IsNil() {
-			msg := fmt.Sprintf("can't marshal nil pointer '%v'",
-				vv.Type().String())
-			err := marshalError("Marshal", ErrBadArguments, msg,
-				nil, nil)
-			return 0, err
-		}
-		vve = vve.Elem()
-	}
-
 	enc := Encoder{w: w}
-	return enc.encode(vve)
+	return enc.Encode(v)
 }
 
 // An Encoder wraps an io.Writer that will receive the XDR encoded byte stream.
@@ -649,6 +630,33 @@ func (enc *Encoder) indirect(v reflect.Value) reflect.Value {
 		rv = rv.Elem()
 	}
 	return rv
+}
+
+// Encode operates identically to the Marshal function with the exception of
+// using the writer associated with the Encoder for the destination of the
+// XDR-encoded data instead of a user-supplied writer.  See the Marshal
+// documentation for specifics.
+func (enc *Encoder) Encode(v interface{}) (int, error) {
+	if v == nil {
+		msg := "can't marshal nil interface"
+		err := marshalError("Marshal", ErrNilInterface, msg, nil, nil)
+		return 0, err
+	}
+
+	vv := reflect.ValueOf(v)
+	vve := vv
+	for vve.Kind() == reflect.Ptr {
+		if vve.IsNil() {
+			msg := fmt.Sprintf("can't marshal nil pointer '%v'",
+				vv.Type().String())
+			err := marshalError("Marshal", ErrBadArguments, msg,
+				nil, nil)
+			return 0, err
+		}
+		vve = vve.Elem()
+	}
+
+	return enc.encode(vve)
 }
 
 // NewEncoder returns an object that can be used to manually choose fields to

@@ -16,7 +16,7 @@ NOTE: Version 1 of this package is still available via the
 github.com/davecgh/go-xdr/xdr import path to avoid breaking existing clients.  However, it is highly recommended that all old clients upgrade to version 2
 and all new clients use version 2.  In addition to some speed optimizations,
 version 2 has been been updated to work with standard the io.Reader and
-io.Writer interfaces instead of raw byte slices.  This allows it to by much more
+io.Writer interfaces instead of raw byte slices.  This allows it to be much more
 flexible and work directly with files, network connections, etc.
 
 ## Documentation

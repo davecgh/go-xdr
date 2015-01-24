@@ -75,28 +75,8 @@ potential issues are unsupported Go types, attempting to decode a value which is
 too large to fit into a specified Go type, and exceeding max slice limitations.
 */
 func Unmarshal(r io.Reader, v interface{}) (int, error) {
-	if v == nil {
-		msg := "can't unmarshal to nil interface"
-		return 0, unmarshalError("Unmarshal", ErrNilInterface, msg, nil,
-			nil)
-	}
-
-	vv := reflect.ValueOf(v)
-	if vv.Kind() != reflect.Ptr {
-		msg := fmt.Sprintf("can't unmarshal to non-pointer '%v' - use "+
-			"& operator", vv.Type().String())
-		err := unmarshalError("Unmarshal", ErrBadArguments, msg, nil, nil)
-		return 0, err
-	}
-	if vv.IsNil() && !vv.CanSet() {
-		msg := fmt.Sprintf("can't unmarshal to unsettable '%v' - use "+
-			"& operator", vv.Type().String())
-		err := unmarshalError("Unmarshal", ErrNotSettable, msg, nil, nil)
-		return 0, err
-	}
-
 	d := Decoder{r: r}
-	return d.decode(vv)
+	return d.Decode(v)
 }
 
 // A Decoder wraps an io.Reader that is expected to provide an XDR-encoded byte
@@ -834,6 +814,34 @@ func (d *Decoder) indirect(v reflect.Value) (reflect.Value, error) {
 		rv = rv.Elem()
 	}
 	return rv, nil
+}
+
+// Decode operates identically to the Unmarshal function with the exception of
+// using the reader associated with the Decoder as the source of XDR-encoded
+// data instead of a user-supplied reader.  See the Unmarhsal documentation for
+// specifics.
+func (d *Decoder) Decode(v interface{}) (int, error) {
+	if v == nil {
+		msg := "can't unmarshal to nil interface"
+		return 0, unmarshalError("Unmarshal", ErrNilInterface, msg, nil,
+			nil)
+	}
+
+	vv := reflect.ValueOf(v)
+	if vv.Kind() != reflect.Ptr {
+		msg := fmt.Sprintf("can't unmarshal to non-pointer '%v' - use "+
+			"& operator", vv.Type().String())
+		err := unmarshalError("Unmarshal", ErrBadArguments, msg, nil, nil)
+		return 0, err
+	}
+	if vv.IsNil() && !vv.CanSet() {
+		msg := fmt.Sprintf("can't unmarshal to unsettable '%v' - use "+
+			"& operator", vv.Type().String())
+		err := unmarshalError("Unmarshal", ErrNotSettable, msg, nil, nil)
+		return 0, err
+	}
+
+	return d.decode(vv)
 }
 
 // NewDecoder returns a Decoder that can be used to manually decode XDR data

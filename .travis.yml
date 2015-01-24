@@ -2,6 +2,7 @@ language: go
 go:
   - release
   - tip
+sudo: false
 before_install:
   - gotools=golang.org/x/tools
   - if [ "$TRAVIS_GO_VERSION" = "release" ] || [ "$TRAVIS_GO_VERSION" = "go1.3.3" ]; then gotools=code.google.com/p/go.tools; fi

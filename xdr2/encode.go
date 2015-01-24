@@ -109,7 +109,7 @@ func (enc *Encoder) EncodeInt(v int32) (int, error) {
 	return n, nil
 }
 
-// EncodeInt writes the XDR encoded representation of the passed 32-bit
+// EncodeUint writes the XDR encoded representation of the passed 32-bit
 // unsigned integer to the encapsulated writer and returns the number of bytes
 // written.
 //
@@ -143,7 +143,6 @@ func (enc *Encoder) EncodeUint(v uint32) (int, error) {
 //
 // A MarshalError is returned if the enumeration value is not one of the
 // provided valid values or if writing the data fails.
-
 //
 // Reference:
 // 	RFC Section 4.3 - Enumeration
@@ -157,7 +156,7 @@ func (enc *Encoder) EncodeEnum(v int32, validEnums map[int32]bool) (int, error) 
 	return enc.EncodeInt(v)
 }
 
-// EncodeInt writes the XDR encoded representation of the passed boolean to the
+// EncodeBool writes the XDR encoded representation of the passed boolean to the
 // encapsulated writer and returns the number of bytes written.
 //
 // A MarshalError with an error code of ErrIO is returned if writing the data

@@ -18,9 +18,10 @@ package xdr_test
 
 import (
 	"bytes"
-	"github.com/davecgh/go-xdr/xdr2"
 	"testing"
 	"unsafe"
+
+	"github.com/davecgh/go-xdr/xdr2"
 )
 
 // BenchmarkUnmarshal benchmarks the Unmarshal function by using a dummy

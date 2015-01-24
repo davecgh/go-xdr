@@ -18,6 +18,7 @@ package xdr_test
 
 import (
 	"fmt"
+
 	"github.com/davecgh/go-xdr/xdr"
 )
 

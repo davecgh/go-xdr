@@ -17,9 +17,10 @@
 package xdr_test
 
 import (
-	"github.com/davecgh/go-xdr/xdr"
 	"testing"
 	"unsafe"
+
+	"github.com/davecgh/go-xdr/xdr"
 )
 
 func BenchmarkUnmarshal(b *testing.B) {

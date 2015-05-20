@@ -140,10 +140,11 @@ func TestMarshalError(t *testing.T) {
 	}
 }
 
-// TestMarshalError tests the error output for the MarshalError type.
+// TestIOErr ensures the IsIO function behaves as expected given different error
+// types.
 func TestIOErr(t *testing.T) {
 	tests := []struct {
-		in   interface{}
+		in   error
 		want bool
 	}{
 		{
@@ -189,7 +190,7 @@ func TestIOErr(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		result := IsIO(test.in.(error))
+		result := IsIO(test.in)
 		if result != test.want {
 			t.Errorf("Error #%d\n got: %v want: %v", i, result,
 				test.want)

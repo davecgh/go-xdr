@@ -17,6 +17,7 @@
 package xdr_test
 
 import (
+	"errors"
 	"testing"
 
 	. "github.com/davecgh/go-xdr/xdr2"
@@ -133,6 +134,64 @@ func TestMarshalError(t *testing.T) {
 		result := test.in.Error()
 		if result != test.want {
 			t.Errorf("Error #%d\n got: %s want: %s", i, result,
+				test.want)
+			continue
+		}
+	}
+}
+
+// TestMarshalError tests the error output for the MarshalError type.
+func TestIOErr(t *testing.T) {
+	tests := []struct {
+		in   interface{}
+		want bool
+	}{
+		{
+			&MarshalError{
+				ErrorCode:   ErrIO,
+				Func:        "test",
+				Description: "EOF while encoding 5 bytes",
+				Value:       []byte{0x01, 0x02},
+			},
+			true,
+		},
+		{
+			&MarshalError{
+				ErrorCode:   ErrUnsupportedType,
+				Func:        "test",
+				Description: "ErrUnsupportedType",
+				Value:       []byte{},
+			},
+			false,
+		},
+		{
+			&UnmarshalError{
+				ErrorCode:   ErrIO,
+				Func:        "test",
+				Description: "EOF while decoding 5 bytes",
+				Value:       []byte{0x01, 0x02},
+			},
+			true,
+		},
+		{
+			&UnmarshalError{
+				ErrorCode:   ErrUnsupportedType,
+				Func:        "test",
+				Description: "ErrUnsupportedType",
+				Value:       []byte{},
+			},
+			false,
+		},
+		{
+			errors.New("boom"),
+			false,
+		},
+	}
+
+	for i, test := range tests {
+		result := IsIO(test.in.(error))
+		if result != test.want {
+			t.Errorf("Error #%d\n got: %v want: %v", i, result,
 				test.want)
 			continue
 		}

@@ -16,9 +16,7 @@
 
 package xdr
 
-import (
-	"fmt"
-)
+import "fmt"
 
 // ErrorCode identifies a kind of error.
 type ErrorCode int
@@ -122,6 +120,18 @@ func unmarshalError(f string, c ErrorCode, desc string, v interface{}, err error
 	}
 
 	return e
+}
+
+// IsIO returns a boolean indicating whether the error is known to report that
+// the underlying reader or writer encountered an ErrIO.
+func IsIO(err error) bool {
+	switch e := err.(type) {
+	case *UnmarshalError:
+		return e.ErrorCode == ErrIO
+	case *MarshalError:
+		return e.ErrorCode == ErrIO
+	}
+	return false
 }
 
 // MarshalError describes a problem encountered while marshaling data.

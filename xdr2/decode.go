@@ -24,10 +24,10 @@ import (
 	"time"
 )
 
-const maxInt32 = int(^uint32(0) >> 1)
-
-var errMaxSlice = "data exceeds max slice limit"
-var errIODecode = "%s while decoding %d bytes"
+var (
+	errMaxSlice = "data exceeds max slice limit"
+	errIODecode = "%s while decoding %d bytes"
+)
 
 /*
 Unmarshal parses XDR-encoded data into the value pointed to by v reading from
@@ -306,7 +306,7 @@ func (d *Decoder) DecodeFixedOpaque(size int32) ([]byte, int, error) {
 
 	pad := (4 - (size % 4)) % 4
 	paddedSize := size + pad
-	if uint(paddedSize) > uint(maxInt32) {
+	if uint(paddedSize) > uint(math.MaxInt32) {
 		err := unmarshalError("DecodeFixedOpaque", ErrOverflow,
 			errMaxSlice, paddedSize, nil)
 		return nil, 0, err
@@ -338,7 +338,7 @@ func (d *Decoder) DecodeOpaque() ([]byte, int, error) {
 	if err != nil {
 		return nil, n, err
 	}
-	if uint(dataLen) > uint(maxInt32) {
+	if uint(dataLen) > uint(math.MaxInt32) {
 		err := unmarshalError("DecodeOpaque", ErrOverflow, errMaxSlice,
 			dataLen, nil)
 		return nil, n, err
@@ -371,7 +371,7 @@ func (d *Decoder) DecodeString() (string, int, error) {
 	if err != nil {
 		return "", n, err
 	}
-	if uint(dataLen) > uint(maxInt32) {
+	if uint(dataLen) > uint(math.MaxInt32) {
 		err = unmarshalError("DecodeString", ErrOverflow, errMaxSlice,
 			dataLen, nil)
 		return "", n, err
@@ -441,7 +441,7 @@ func (d *Decoder) decodeArray(v reflect.Value, ignoreOpaque bool) (int, error) {
 	if err != nil {
 		return n, err
 	}
-	if uint(dataLen) > uint(maxInt32) {
+	if uint(dataLen) > uint(math.MaxInt32) {
 		err := unmarshalError("decodeArray", ErrOverflow, errMaxSlice,
 			dataLen, nil)
 		return n, err

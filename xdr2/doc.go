@@ -66,6 +66,7 @@ and Unmarshal functions has specific details of how the mapping proceeds.
 	[#]byte <-> XDR Fixed-Length Opaque Data
 	[]<type> <-> XDR Variable-Length Array
 	[#]<type> <-> XDR Fixed-Length Array
+	*<type> <-> XDR Optional data (when marked with struct tag `xdr:"optional"`)
 	struct <-> XDR Structure or Discriminated Unions
 	map <-> XDR Variable-Length Array of two-element XDR Structures
 	time.Time <-> XDR String encoded with RFC3339 nanosecond precision

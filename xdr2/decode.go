@@ -571,11 +571,18 @@ func (d *Decoder) decodeStruct(v reflect.Value) (int, error) {
 		}
 
 		if tag.Get("union") == "true" {
-			if !vf.Type().ConvertibleTo(reflect.TypeOf(0)) {
-				msg := fmt.Sprintf("type '%s' is not valid", v.Kind().String())
+			if vf.Type().ConvertibleTo(reflect.TypeOf(0)) {
+				union = strconv.Itoa(int(vf.Convert(reflect.TypeOf(0)).Int()))
+			} else if vf.Kind() == reflect.Bool {
+				if vf.Bool() {
+					union = "1"
+				} else {
+					union = "0"
+				}
+			} else {
+				msg := fmt.Sprintf("type '%s' is not valid", vf.Kind().String())
 				return n, unmarshalError("decodeStruct", ErrBadDiscriminant, msg, nil, nil)
 			}
-			union = strconv.Itoa(int(vf.Int()))
 		}
 
 	}

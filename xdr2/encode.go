@@ -480,11 +480,18 @@ func (enc *Encoder) encodeStruct(v reflect.Value) (int, error) {
 		// option "unioncase=N" marks a struct field that is only serialized
 		// when the discriminant has the specified value.
 		if tag.Get("union") == "true" {
-			if !vf.Type().ConvertibleTo(reflect.TypeOf(0)) {
-				msg := fmt.Sprintf("type '%s' is not valid", v.Kind().String())
+			if vf.Type().ConvertibleTo(reflect.TypeOf(0)) {
+				union = strconv.Itoa(int(vf.Convert(reflect.TypeOf(0)).Int()))
+			} else if vf.Kind() == reflect.Bool {
+				if vf.Bool() {
+					union = "1"
+				} else {
+					union = "0"
+				}
+			} else {
+				msg := fmt.Sprintf("type '%s' is not valid", vf.Kind().String())
 				return n, marshalError("encodeStruct", ErrBadDiscriminant, msg, nil, nil)
 			}
-			union = strconv.Itoa(int(vf.Int()))
 		}
 
 		if union != "" {

@@ -69,6 +69,13 @@ type unionStruct struct {
 	VA byte
 }
 
+type unionBoolStruct struct {
+	UV bool `xdr:"union"`
+	V0 byte `xdr:"unioncase=0"`
+	V1 byte `xdr:"unioncase=1"`
+	VA byte
+}
+
 type invalidUnionStruct struct {
 	UV string `xdr:"union"`
 }
@@ -369,6 +376,12 @@ func TestUnmarshal(t *testing.T) {
 		{[]byte{0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01},
 			unionStruct{2, 0, 0, 1},
 			8, nil},
+		{[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
+			unionBoolStruct{false, 1, 0, 1},
+			12, nil},
+		{[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
+			unionBoolStruct{true, 0, 1, 1},
+			12, nil},
 		{[]byte{0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01},
 			invalidUnionStruct{},
 			8, &UnmarshalError{ErrorCode: ErrBadDiscriminant}},

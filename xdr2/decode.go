@@ -21,6 +21,7 @@ import (
 	"io"
 	"math"
 	"reflect"
+	"strconv"
 	"time"
 )
 
@@ -507,6 +508,7 @@ func (d *Decoder) decodeArray(v reflect.Value, ignoreOpaque bool) (int, error) {
 // 	XDR encoded elements in the order of their declaration in the struct
 func (d *Decoder) decodeStruct(v reflect.Value) (int, error) {
 	var n int
+	var union string
 	vt := v.Type()
 	for i := 0; i < v.NumField(); i++ {
 		// Skip unexported fields.
@@ -530,10 +532,11 @@ func (d *Decoder) decodeStruct(v reflect.Value) (int, error) {
 			return n, err
 		}
 
+		tag := parseTag(vtf.Tag)
+
 		// Handle non-opaque data to []uint8 and [#]uint8 based on
 		// struct tag.
-		tag := vtf.Tag.Get("xdropaque")
-		if tag == "false" {
+		if tag.Get("opaque") == "false" {
 			switch vf.Kind() {
 			case reflect.Slice:
 				n2, err := d.decodeArray(vf, true)
@@ -553,25 +556,39 @@ func (d *Decoder) decodeStruct(v reflect.Value) (int, error) {
 			}
 		}
 
+		if union != "" {
+			ucase := tag.Get("unioncase")
+			if ucase != "" && ucase != union {
+				continue
+			}
+		}
+
 		// Decode each struct field.
 		n2, err := d.decode(vf)
 		n += n2
 		if err != nil {
 			return n, err
 		}
+
+		if tag.Get("union") == "true" {
+			if !vf.Type().ConvertibleTo(reflect.TypeOf(0)) {
+				msg := fmt.Sprintf("type '%s' is not valid", v.Kind().String())
+				return n, unmarshalError("decodeStruct", ErrBadDiscriminant, msg, nil, nil)
+			}
+			union = strconv.Itoa(int(vf.Int()))
+		}
+
 	}
 
 	return n, nil
 }
 
-// RFC Section 4.15 - Discriminated Union
 // RFC Section 4.16 - Void
 // RFC Section 4.17 - Constant
 // RFC Section 4.18 - Typedef
 // RFC Section 4.19 - Optional data
 // RFC Sections 4.15 though 4.19 only apply to the data specification language
-// which is not implemented by this package.  In the case of discriminated
-// unions, struct tags are used to perform a similar function.
+// which is not implemented by this package.
 
 // decodeMap treats the next bytes as an XDR encoded variable array of 2-element
 // structures whose fields are of the same type as the map keys and elements

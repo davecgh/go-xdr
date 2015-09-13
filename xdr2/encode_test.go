@@ -305,6 +305,18 @@ func TestMarshal(t *testing.T) {
 			[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
 			8, &MarshalError{ErrorCode: ErrIO}},
 
+		// Discriminated unions
+		{unionStruct{0, 0, 1, 2},
+			[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02},
+			12, nil},
+		{unionStruct{1, 0, 1, 2},
+			[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02},
+			12, nil},
+		{unionStruct{2, 0, 1, 2},
+			[]byte{0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02},
+			8, nil},
+		{invalidUnionStruct{"err"}, []byte{}, 0, &MarshalError{ErrorCode: ErrBadDiscriminant}},
+
 		// Expected errors
 		{nilInterface, []byte{}, 0, &MarshalError{ErrorCode: ErrNilInterface}},
 		{&nilInterface, []byte{}, 0, &MarshalError{ErrorCode: ErrNilInterface}},

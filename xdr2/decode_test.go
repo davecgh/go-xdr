@@ -58,8 +58,19 @@ type allTypesTest struct {
 
 // opaqueStruct is used to test handling of uint8 slices and arrays.
 type opaqueStruct struct {
-	Slice []uint8  `xdropaque:"false"`
-	Array [1]uint8 `xdropaque:"false"`
+	Slice []uint8  `xdr:"opaque=false"`
+	Array [1]uint8 `xdr:"opaque=false"`
+}
+
+type unionStruct struct {
+	UV int  `xdr:"union"`
+	V0 byte `xdr:"unioncase=0"`
+	V1 byte `xdr:"unioncase=1"`
+	VA byte
+}
+
+type invalidUnionStruct struct {
+	UV string `xdr:"union"`
 }
 
 // testExpectedURet is a convenience method to test an expected number of bytes
@@ -347,6 +358,20 @@ func TestUnmarshal(t *testing.T) {
 		{[]byte{0x00, 0x00}, allTypesTest{}, 2, &UnmarshalError{ErrorCode: ErrIO}},
 		{[]byte{0x00, 0x00, 0x00}, opaqueStruct{}, 3, &UnmarshalError{ErrorCode: ErrIO}},
 		{[]byte{0x00, 0x00, 0x00, 0x00, 0x00}, opaqueStruct{}, 5, &UnmarshalError{ErrorCode: ErrIO}},
+
+		// Discriminated unions
+		{[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
+			unionStruct{0, 1, 0, 1},
+			12, nil},
+		{[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
+			unionStruct{1, 0, 1, 1},
+			12, nil},
+		{[]byte{0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01},
+			unionStruct{2, 0, 0, 1},
+			8, nil},
+		{[]byte{0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01},
+			invalidUnionStruct{},
+			8, &UnmarshalError{ErrorCode: ErrBadDiscriminant}},
 
 		// Expected errors
 		{nil, nilInterface, 0, &UnmarshalError{ErrorCode: ErrNilInterface}},

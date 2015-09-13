@@ -80,6 +80,15 @@ type invalidUnionStruct struct {
 	UV string `xdr:"union"`
 }
 
+type optionalDataStruct struct {
+	Data int
+	Next *optionalDataStruct `xdr:"optional"`
+}
+
+type invalidOptionalDataStruct struct {
+	Data int `xdr:"optional"`
+}
+
 // testExpectedURet is a convenience method to test an expected number of bytes
 // read and error for an unmarshal.
 func testExpectedURet(t *testing.T, name string, n, wantN int, err, wantErr error) bool {
@@ -385,6 +394,14 @@ func TestUnmarshal(t *testing.T) {
 		{[]byte{0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01},
 			invalidUnionStruct{},
 			8, &UnmarshalError{ErrorCode: ErrBadDiscriminant}},
+
+		// Optional data
+		{[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00},
+			optionalDataStruct{1, &optionalDataStruct{2, nil}},
+			16, nil},
+		{[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00},
+			invalidOptionalDataStruct{},
+			0, &UnmarshalError{ErrorCode: ErrBadOptional}},
 
 		// Expected errors
 		{nil, nilInterface, 0, &UnmarshalError{ErrorCode: ErrNilInterface}},

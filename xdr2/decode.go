@@ -517,13 +517,36 @@ func (d *Decoder) decodeStruct(v reflect.Value) (int, error) {
 			continue
 		}
 
+		vf := v.Field(i)
+		tag := parseTag(vtf.Tag)
+
+		// RFC Section 4.19 - Optional data
+		if tag.Get("optional") == "true" {
+			if vf.Type().Kind() != reflect.Ptr {
+				msg := fmt.Sprintf("optional must be a pointer, not '%v'",
+					vf.Type().String())
+				err := unmarshalError("decodeStruct", ErrBadOptional,
+					msg, nil, nil)
+				return n, err
+			}
+
+			hasopt, n2, err := d.DecodeBool()
+			n += n2
+			if err != nil {
+				return n2, err
+			}
+			if !hasopt {
+				continue
+			}
+		}
+
 		// Indirect through pointers allocating them as needed and
 		// ensure the field is settable.
-		vf := v.Field(i)
 		vf, err := d.indirect(vf)
 		if err != nil {
 			return n, err
 		}
+
 		if !vf.CanSet() {
 			msg := fmt.Sprintf("can't decode to unsettable '%v'",
 				vf.Type().String())
@@ -531,8 +554,6 @@ func (d *Decoder) decodeStruct(v reflect.Value) (int, error) {
 				msg, nil, nil)
 			return n, err
 		}
-
-		tag := parseTag(vtf.Tag)
 
 		// Handle non-opaque data to []uint8 and [#]uint8 based on
 		// struct tag.

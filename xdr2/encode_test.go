@@ -323,6 +323,13 @@ func TestMarshal(t *testing.T) {
 			12, nil},
 		{invalidUnionStruct{"err"}, []byte{}, 0, &MarshalError{ErrorCode: ErrBadDiscriminant}},
 
+		// Optional data
+		{optionalDataStruct{1, &optionalDataStruct{2, nil}},
+			[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00},
+			16, nil},
+		{invalidOptionalDataStruct{1},
+			[]byte{}, 0, &MarshalError{ErrorCode: ErrBadOptional}},
+
 		// Expected errors
 		{nilInterface, []byte{}, 0, &MarshalError{ErrorCode: ErrNilInterface}},
 		{&nilInterface, []byte{}, 0, &MarshalError{ErrorCode: ErrNilInterface}},

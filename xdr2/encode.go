@@ -449,10 +449,32 @@ func (enc *Encoder) encodeStruct(v reflect.Value) (int, error) {
 		if vtf.PkgPath != "" {
 			continue
 		}
-		vf := v.Field(i)
-		vf = enc.indirect(vf)
 
+		vf := v.Field(i)
 		tag := parseTag(vtf.Tag)
+
+		// RFC Section 4.19 - Optional data
+		if tag.Get("optional") == "true" {
+			if vf.Type().Kind() != reflect.Ptr {
+				msg := fmt.Sprintf("optional must be a pointer, not '%v'",
+					vf.Type().String())
+				err := marshalError("encodeStruct", ErrBadOptional,
+					msg, nil, nil)
+				return n, err
+			}
+
+			hasopt := !vf.IsNil()
+			n2, err := enc.EncodeBool(hasopt)
+			n += n2
+			if err != nil {
+				return n2, err
+			}
+			if !hasopt {
+				continue
+			}
+		}
+
+		vf = enc.indirect(vf)
 
 		// Handle non-opaque data to []uint8 and [#]uint8 based on struct tag.
 		if tag.Get("opaque") == "false" {

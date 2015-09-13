@@ -14,13 +14,11 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package xdr_test
+package xdr
 
 import (
 	"errors"
 	"testing"
-
-	. "github.com/davecgh/go-xdr/xdr2"
 )
 
 // TestErrorCodeStringer tests the stringized output for the ErrorCode type.

@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package xdr_test
+package xdr
 
 import (
 	"bytes"
@@ -23,8 +23,6 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	. "github.com/davecgh/go-xdr/xdr2"
 )
 
 // subTest is used to allow testing of the Unmarshal function into struct fields

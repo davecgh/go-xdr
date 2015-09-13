@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package xdr_test
+package xdr
 
 import (
 	"fmt"
@@ -22,8 +22,6 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	. "github.com/davecgh/go-xdr/xdr2"
 )
 
 // testExpectedMRet is a convenience method to test an expected number of bytes

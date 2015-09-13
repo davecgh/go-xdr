@@ -14,13 +14,11 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package xdr_test
+package xdr
 
 import (
 	"bytes"
 	"fmt"
-
-	"github.com/davecgh/go-xdr/xdr2"
 )
 
 // This example demonstrates how to use Marshal to automatically XDR encode
@@ -40,7 +38,7 @@ func ExampleMarshal() {
 	// Use marshal to automatically determine the appropriate underlying XDR
 	// types and encode.
 	var w bytes.Buffer
-	bytesWritten, err := xdr.Marshal(&w, &h)
+	bytesWritten, err := Marshal(&w, &h)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -78,7 +76,7 @@ func ExampleUnmarshal() {
 	// Declare a variable to provide Unmarshal with a concrete type and
 	// instance to decode into.
 	var h ImageHeader
-	bytesRead, err := xdr.Unmarshal(bytes.NewReader(encodedData), &h)
+	bytesRead, err := Unmarshal(bytes.NewReader(encodedData), &h)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -111,7 +109,7 @@ func ExampleNewDecoder() {
 	}
 
 	// Get a new decoder for manual decoding.
-	dec := xdr.NewDecoder(bytes.NewReader(encodedData))
+	dec := NewDecoder(bytes.NewReader(encodedData))
 
 	signature, _, err := dec.DecodeFixedOpaque(3)
 	if err != nil {
@@ -167,7 +165,7 @@ func ExampleNewEncoder() {
 
 	// Get a new encoder for manual encoding.
 	var w bytes.Buffer
-	enc := xdr.NewEncoder(&w)
+	enc := NewEncoder(&w)
 
 	_, err := enc.EncodeFixedOpaque(signature)
 	if err != nil {

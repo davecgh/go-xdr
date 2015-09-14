@@ -533,7 +533,7 @@ func (d *Decoder) decodeStruct(v reflect.Value) (int, error) {
 			hasopt, n2, err := d.DecodeBool()
 			n += n2
 			if err != nil {
-				return n2, err
+				return n, err
 			}
 			if !hasopt {
 				continue

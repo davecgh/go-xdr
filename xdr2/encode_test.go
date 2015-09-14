@@ -327,8 +327,12 @@ func TestMarshal(t *testing.T) {
 		{optionalDataStruct{1, &optionalDataStruct{2, nil}},
 			[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00},
 			16, nil},
+		{optionalDataStruct{1, nil},
+			[]uint8{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00},
+			7, &MarshalError{ErrorCode: ErrIO}},
 		{invalidOptionalDataStruct{1},
-			[]byte{}, 0, &MarshalError{ErrorCode: ErrBadOptional}},
+			[]byte{},
+			0, &MarshalError{ErrorCode: ErrBadOptional}},
 
 		// Expected errors
 		{nilInterface, []byte{}, 0, &MarshalError{ErrorCode: ErrNilInterface}},

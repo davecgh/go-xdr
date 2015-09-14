@@ -467,7 +467,7 @@ func (enc *Encoder) encodeStruct(v reflect.Value) (int, error) {
 			n2, err := enc.EncodeBool(hasopt)
 			n += n2
 			if err != nil {
-				return n2, err
+				return n, err
 			}
 			if !hasopt {
 				continue

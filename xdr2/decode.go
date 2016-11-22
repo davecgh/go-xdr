@@ -79,6 +79,13 @@ func Unmarshal(r io.Reader, v interface{}) (int, error) {
 	return d.Decode(v)
 }
 
+// UnmarshalLimited is identical to Unmarshal but it sets maxReadSize in order
+// to cap reads.
+func UnmarshalLimited(r io.Reader, v interface{}, maxSize uint) (int, error) {
+	d := Decoder{r: r, maxReadSize: maxSize}
+	return d.Decode(v)
+}
+
 // A Decoder wraps an io.Reader that is expected to provide an XDR-encoded byte
 // stream and provides several exposed methods to manually decode various XDR
 // primitives without relying on reflection.  The NewDecoder function can be
@@ -90,6 +97,11 @@ func Unmarshal(r io.Reader, v interface{}) (int, error) {
 // won't work.
 type Decoder struct {
 	r io.Reader
+
+	// maxReadSize is the default maximum bytes an element can contain.  0
+	// is unlimited and provides backwards compatability.  Setting it to a
+	// non-zero value caps reads.
+	maxReadSize uint
 }
 
 // DecodeInt treats the next 4 bytes as an XDR encoded integer and returns the
@@ -338,7 +350,8 @@ func (d *Decoder) DecodeOpaque() ([]byte, int, error) {
 	if err != nil {
 		return nil, n, err
 	}
-	if uint(dataLen) > uint(math.MaxInt32) {
+	if uint(dataLen) > uint(math.MaxInt32) ||
+		(d.maxReadSize != 0 && uint(dataLen) > d.maxReadSize) {
 		err := unmarshalError("DecodeOpaque", ErrOverflow, errMaxSlice,
 			dataLen, nil)
 		return nil, n, err
@@ -371,7 +384,8 @@ func (d *Decoder) DecodeString() (string, int, error) {
 	if err != nil {
 		return "", n, err
 	}
-	if uint(dataLen) > uint(math.MaxInt32) {
+	if uint(dataLen) > uint(math.MaxInt32) ||
+		(d.maxReadSize != 0 && uint(dataLen) > d.maxReadSize) {
 		err = unmarshalError("DecodeString", ErrOverflow, errMaxSlice,
 			dataLen, nil)
 		return "", n, err
@@ -441,7 +455,8 @@ func (d *Decoder) decodeArray(v reflect.Value, ignoreOpaque bool) (int, error) {
 	if err != nil {
 		return n, err
 	}
-	if uint(dataLen) > uint(math.MaxInt32) {
+	if uint(dataLen) > uint(math.MaxInt32) ||
+		(d.maxReadSize != 0 && uint(dataLen) > d.maxReadSize) {
 		err := unmarshalError("decodeArray", ErrOverflow, errMaxSlice,
 			dataLen, nil)
 		return n, err
@@ -849,4 +864,10 @@ func (d *Decoder) Decode(v interface{}) (int, error) {
 // manually creating a Decoder.
 func NewDecoder(r io.Reader) *Decoder {
 	return &Decoder{r: r}
+}
+
+// NewDecoderLimited is identical to NewDecoder but it sets maxReadSize in
+// order to cap reads.
+func NewDecoderLimited(r io.Reader, maxSize uint) *Decoder {
+	return &Decoder{r: r, maxReadSize: maxSize}
 }

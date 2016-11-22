@@ -451,95 +451,103 @@ func (f decodeFunc) String() string {
 
 // TestDecoder ensures a Decoder works as intended.
 func TestDecoder(t *testing.T) {
-	tests := []struct {
+	type test struct {
 		f       decodeFunc  // function to use to decode
 		in      []byte      // input bytes
 		wantVal interface{} // expected value
 		wantN   int         // expected number of bytes read
+		maxSize uint        // read limiter value
 		err     error       // expected error
-	}{
+	}
+	tests := []test{
 		// Bool
-		{fDecodeBool, []byte{0x00, 0x00, 0x00, 0x00}, false, 4, nil},
-		{fDecodeBool, []byte{0x00, 0x00, 0x00, 0x01}, true, 4, nil},
+		{fDecodeBool, []byte{0x00, 0x00, 0x00, 0x00}, false, 4, 0, nil},
+		{fDecodeBool, []byte{0x00, 0x00, 0x00, 0x01}, true, 4, 0, nil},
 		// Expected Failures -- only 0 or 1 is a valid bool
-		{fDecodeBool, []byte{0x01, 0x00, 0x00, 0x00}, true, 4, &UnmarshalError{ErrorCode: ErrBadEnumValue}},
-		{fDecodeBool, []byte{0x00, 0x00, 0x40, 0x00}, true, 4, &UnmarshalError{ErrorCode: ErrBadEnumValue}},
+		{fDecodeBool, []byte{0x01, 0x00, 0x00, 0x00}, true, 4, 0, &UnmarshalError{ErrorCode: ErrBadEnumValue}},
+		{fDecodeBool, []byte{0x00, 0x00, 0x40, 0x00}, true, 4, 0, &UnmarshalError{ErrorCode: ErrBadEnumValue}},
 
 		// Double
-		{fDecodeDouble, []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, float64(0), 8, nil},
-		{fDecodeDouble, []byte{0x40, 0x09, 0x21, 0xfb, 0x54, 0x44, 0x2d, 0x18}, float64(3.141592653589793), 8, nil},
-		{fDecodeDouble, []byte{0xFF, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, float64(math.Inf(-1)), 8, nil},
-		{fDecodeDouble, []byte{0x7F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, float64(math.Inf(0)), 8, nil},
+		{fDecodeDouble, []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, float64(0), 8, 0, nil},
+		{fDecodeDouble, []byte{0x40, 0x09, 0x21, 0xfb, 0x54, 0x44, 0x2d, 0x18}, float64(3.141592653589793), 8, 0, nil},
+		{fDecodeDouble, []byte{0xFF, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, float64(math.Inf(-1)), 8, 0, nil},
+		{fDecodeDouble, []byte{0x7F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, float64(math.Inf(0)), 8, 0, nil},
 
 		// Enum
-		{fDecodeEnum, []byte{0x00, 0x00, 0x00, 0x00}, int32(0), 4, nil},
-		{fDecodeEnum, []byte{0x00, 0x00, 0x00, 0x01}, int32(1), 4, nil},
-		{fDecodeEnum, []byte{0x00, 0x00, 0x00, 0x02}, nil, 4, &UnmarshalError{ErrorCode: ErrBadEnumValue}},
-		{fDecodeEnum, []byte{0x12, 0x34, 0x56, 0x78}, nil, 4, &UnmarshalError{ErrorCode: ErrBadEnumValue}},
-		{fDecodeEnum, []byte{0x00}, nil, 1, &UnmarshalError{ErrorCode: ErrIO}},
+		{fDecodeEnum, []byte{0x00, 0x00, 0x00, 0x00}, int32(0), 4, 0, nil},
+		{fDecodeEnum, []byte{0x00, 0x00, 0x00, 0x01}, int32(1), 4, 0, nil},
+		{fDecodeEnum, []byte{0x00, 0x00, 0x00, 0x02}, nil, 4, 0, &UnmarshalError{ErrorCode: ErrBadEnumValue}},
+		{fDecodeEnum, []byte{0x12, 0x34, 0x56, 0x78}, nil, 4, 0, &UnmarshalError{ErrorCode: ErrBadEnumValue}},
+		{fDecodeEnum, []byte{0x00}, nil, 1, 0, &UnmarshalError{ErrorCode: ErrIO}},
 
 		// FixedOpaque
-		{fDecodeFixedOpaque, []byte{0x01, 0x00, 0x00, 0x00}, []byte{0x01}, 4, nil},
-		{fDecodeFixedOpaque, []byte{0x01, 0x02, 0x00, 0x00}, []byte{0x01, 0x02}, 4, nil},
-		{fDecodeFixedOpaque, []byte{0x01, 0x02, 0x03, 0x00}, []byte{0x01, 0x02, 0x03}, 4, nil},
-		{fDecodeFixedOpaque, []byte{0x01, 0x02, 0x03, 0x04}, []byte{0x01, 0x02, 0x03, 0x04}, 4, nil},
-		{fDecodeFixedOpaque, []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x00, 0x00, 0x00}, []byte{0x01, 0x02, 0x03, 0x04, 0x05}, 8, nil},
+		{fDecodeFixedOpaque, []byte{0x01, 0x00, 0x00, 0x00}, []byte{0x01}, 4, 0, nil},
+		{fDecodeFixedOpaque, []byte{0x01, 0x02, 0x00, 0x00}, []byte{0x01, 0x02}, 4, 0, nil},
+		{fDecodeFixedOpaque, []byte{0x01, 0x02, 0x03, 0x00}, []byte{0x01, 0x02, 0x03}, 4, 0, nil},
+		{fDecodeFixedOpaque, []byte{0x01, 0x02, 0x03, 0x04}, []byte{0x01, 0x02, 0x03, 0x04}, 4, 0, nil},
+		{fDecodeFixedOpaque, []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x00, 0x00, 0x00}, []byte{0x01, 0x02, 0x03, 0x04, 0x05}, 8, 0, nil},
 		// Expected Failure -- fixed opaque data not padded
-		{fDecodeFixedOpaque, []byte{0x01}, []byte{0x00}, 1, &UnmarshalError{ErrorCode: ErrIO}},
+		{fDecodeFixedOpaque, []byte{0x01}, []byte{0x00}, 1, 0, &UnmarshalError{ErrorCode: ErrIO}},
 
 		// Float
-		{fDecodeFloat, []byte{0x00, 0x00, 0x00, 0x00}, float32(0), 4, nil},
-		{fDecodeFloat, []byte{0x40, 0x48, 0xF5, 0xC3}, float32(3.14), 4, nil},
-		{fDecodeFloat, []byte{0x49, 0x96, 0xB4, 0x38}, float32(1234567.0), 4, nil},
-		{fDecodeFloat, []byte{0xFF, 0x80, 0x00, 0x00}, float32(math.Inf(-1)), 4, nil},
-		{fDecodeFloat, []byte{0x7F, 0x80, 0x00, 0x00}, float32(math.Inf(0)), 4, nil},
+		{fDecodeFloat, []byte{0x00, 0x00, 0x00, 0x00}, float32(0), 4, 0, nil},
+		{fDecodeFloat, []byte{0x40, 0x48, 0xF5, 0xC3}, float32(3.14), 4, 0, nil},
+		{fDecodeFloat, []byte{0x49, 0x96, 0xB4, 0x38}, float32(1234567.0), 4, 0, nil},
+		{fDecodeFloat, []byte{0xFF, 0x80, 0x00, 0x00}, float32(math.Inf(-1)), 4, 0, nil},
+		{fDecodeFloat, []byte{0x7F, 0x80, 0x00, 0x00}, float32(math.Inf(0)), 4, 0, nil},
 
 		// Hyper
-		{fDecodeHyper, []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, int64(0), 8, nil},
-		{fDecodeHyper, []byte{0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00}, int64(1 << 34), 8, nil},
-		{fDecodeHyper, []byte{0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00}, int64(1 << 42), 8, nil},
-		{fDecodeHyper, []byte{0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, int64(9223372036854775807), 8, nil},
-		{fDecodeHyper, []byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, int64(-1), 8, nil},
-		{fDecodeHyper, []byte{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, int64(-9223372036854775808), 8, nil},
+		{fDecodeHyper, []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, int64(0), 8, 0, nil},
+		{fDecodeHyper, []byte{0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00}, int64(1 << 34), 8, 0, nil},
+		{fDecodeHyper, []byte{0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00}, int64(1 << 42), 8, 0, nil},
+		{fDecodeHyper, []byte{0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, int64(9223372036854775807), 8, 0, nil},
+		{fDecodeHyper, []byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, int64(-1), 8, 0, nil},
+		{fDecodeHyper, []byte{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, int64(-9223372036854775808), 8, 0, nil},
 
 		// Int
-		{fDecodeInt, []byte{0x00, 0x00, 0x00, 0x00}, int32(0), 4, nil},
-		{fDecodeInt, []byte{0x00, 0x04, 0x00, 0x00}, int32(262144), 4, nil},
-		{fDecodeInt, []byte{0x7F, 0xFF, 0xFF, 0xFF}, int32(2147483647), 4, nil},
-		{fDecodeInt, []byte{0xFF, 0xFF, 0xFF, 0xFF}, int32(-1), 4, nil},
-		{fDecodeInt, []byte{0x80, 0x00, 0x00, 0x00}, int32(-2147483648), 4, nil},
+		{fDecodeInt, []byte{0x00, 0x00, 0x00, 0x00}, int32(0), 4, 0, nil},
+		{fDecodeInt, []byte{0x00, 0x04, 0x00, 0x00}, int32(262144), 4, 0, nil},
+		{fDecodeInt, []byte{0x7F, 0xFF, 0xFF, 0xFF}, int32(2147483647), 4, 0, nil},
+		{fDecodeInt, []byte{0xFF, 0xFF, 0xFF, 0xFF}, int32(-1), 4, 0, nil},
+		{fDecodeInt, []byte{0x80, 0x00, 0x00, 0x00}, int32(-2147483648), 4, 0, nil},
 
 		// Opaque
-		{fDecodeOpaque, []byte{0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00}, []byte{0x01}, 8, nil},
-		{fDecodeOpaque, []byte{0x00, 0x00, 0x00, 0x03, 0x01, 0x02, 0x03, 0x00}, []byte{0x01, 0x02, 0x03}, 8, nil},
+		{fDecodeOpaque, []byte{0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00}, []byte{0x01}, 8, 0, nil},
+		{fDecodeOpaque, []byte{0x00, 0x00, 0x00, 0x03, 0x01, 0x02, 0x03, 0x00}, []byte{0x01, 0x02, 0x03}, 8, 0, nil},
 		// Expected Failures -- not enough bytes for length, length
 		// larger than allowed, and data larger than available bytes.
-		{fDecodeOpaque, []byte{0x00, 0x00, 0xFF}, []byte{}, 3, &UnmarshalError{ErrorCode: ErrIO}},
-		{fDecodeOpaque, []byte{0xFF, 0xFF, 0xFF, 0xFF}, []byte{}, 4, &UnmarshalError{ErrorCode: ErrOverflow}},
-		{fDecodeOpaque, []byte{0x7F, 0xFF, 0xFF, 0xFD}, []byte{}, 4, &UnmarshalError{ErrorCode: ErrOverflow}},
-		{fDecodeOpaque, []byte{0x00, 0x00, 0x00, 0xFF}, []byte{}, 4, &UnmarshalError{ErrorCode: ErrIO}},
+		{fDecodeOpaque, []byte{0x00, 0x00, 0xFF}, []byte{}, 3, 0, &UnmarshalError{ErrorCode: ErrIO}},
+		{fDecodeOpaque, []byte{0xFF, 0xFF, 0xFF, 0xFF}, []byte{}, 4, 0, &UnmarshalError{ErrorCode: ErrOverflow}},
+		{fDecodeOpaque, []byte{0x7F, 0xFF, 0xFF, 0xFD}, []byte{}, 4, 0, &UnmarshalError{ErrorCode: ErrOverflow}},
+		{fDecodeOpaque, []byte{0x00, 0x00, 0x00, 0xFF}, []byte{}, 4, 0, &UnmarshalError{ErrorCode: ErrIO}},
+		// Hit maxReadSize in opaque
+		{fDecodeOpaque, []byte{0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00}, []byte{0x01}, 8, 4, nil},
+		{fDecodeOpaque, []byte{0x00, 0x00, 0x00, 0x08, 0x01, 0x00, 0x00, 0x00}, []byte{}, 4, 4, &UnmarshalError{ErrorCode: ErrOverflow}},
 
 		// String
-		{fDecodeString, []byte{0x00, 0x00, 0x00, 0x00}, "", 4, nil},
-		{fDecodeString, []byte{0x00, 0x00, 0x00, 0x03, 0x78, 0x64, 0x72, 0x00}, "xdr", 8, nil},
-		{fDecodeString, []byte{0x00, 0x00, 0x00, 0x06, 0xCF, 0x84, 0x3D, 0x32, 0xCF, 0x80, 0x00, 0x00}, "τ=2π", 12, nil},
+		{fDecodeString, []byte{0x00, 0x00, 0x00, 0x00}, "", 4, 0, nil},
+		{fDecodeString, []byte{0x00, 0x00, 0x00, 0x03, 0x78, 0x64, 0x72, 0x00}, "xdr", 8, 0, nil},
+		{fDecodeString, []byte{0x00, 0x00, 0x00, 0x06, 0xCF, 0x84, 0x3D, 0x32, 0xCF, 0x80, 0x00, 0x00}, "τ=2π", 12, 0, nil},
 		// Expected Failures -- not enough bytes for length, length
 		// larger than allowed, and len larger than available bytes.
-		{fDecodeString, []byte{0x00, 0x00, 0xFF}, "", 3, &UnmarshalError{ErrorCode: ErrIO}},
-		{fDecodeString, []byte{0xFF, 0xFF, 0xFF, 0xFF}, "", 4, &UnmarshalError{ErrorCode: ErrOverflow}},
-		{fDecodeString, []byte{0x00, 0x00, 0x00, 0xFF}, "", 4, &UnmarshalError{ErrorCode: ErrIO}},
+		{fDecodeString, []byte{0x00, 0x00, 0xFF}, "", 3, 0, &UnmarshalError{ErrorCode: ErrIO}},
+		{fDecodeString, []byte{0xFF, 0xFF, 0xFF, 0xFF}, "", 4, 0, &UnmarshalError{ErrorCode: ErrOverflow}},
+		{fDecodeString, []byte{0x00, 0x00, 0x00, 0xFF}, "", 4, 0, &UnmarshalError{ErrorCode: ErrIO}},
+		// Hit maxReadSize in string
+		{fDecodeString, []byte{0x00, 0x00, 0x00, 0x03, 0x78, 0x64, 0x72, 0x00}, "xdr", 8, 4, nil},
+		{fDecodeString, []byte{0x00, 0x00, 0x00, 0x03, 0x78, 0x64, 0x72, 0x00}, "xdr", 4, 2, &UnmarshalError{ErrorCode: ErrOverflow}},
 
 		// Uhyper
-		{fDecodeUhyper, []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, uint64(0), 8, nil},
-		{fDecodeUhyper, []byte{0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00}, uint64(1 << 34), 8, nil},
-		{fDecodeUhyper, []byte{0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00}, uint64(1 << 42), 8, nil},
-		{fDecodeUhyper, []byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, uint64(18446744073709551615), 8, nil},
-		{fDecodeUhyper, []byte{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, uint64(9223372036854775808), 8, nil},
+		{fDecodeUhyper, []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, uint64(0), 8, 0, nil},
+		{fDecodeUhyper, []byte{0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00}, uint64(1 << 34), 8, 0, nil},
+		{fDecodeUhyper, []byte{0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00}, uint64(1 << 42), 8, 0, nil},
+		{fDecodeUhyper, []byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, uint64(18446744073709551615), 8, 0, nil},
+		{fDecodeUhyper, []byte{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, uint64(9223372036854775808), 8, 0, nil},
 
 		// Uint
-		{fDecodeUint, []byte{0x00, 0x00, 0x00, 0x00}, uint32(0), 4, nil},
-		{fDecodeUint, []byte{0x00, 0x04, 0x00, 0x00}, uint32(262144), 4, nil},
-		{fDecodeUint, []byte{0xFF, 0xFF, 0xFF, 0xFF}, uint32(4294967295), 4, nil},
+		{fDecodeUint, []byte{0x00, 0x00, 0x00, 0x00}, uint32(0), 4, 0, nil},
+		{fDecodeUint, []byte{0x00, 0x04, 0x00, 0x00}, uint32(262144), 4, 0, nil},
+		{fDecodeUint, []byte{0xFF, 0xFF, 0xFF, 0xFF}, uint32(4294967295), 4, 0, nil},
 	}
 
 	validEnums := make(map[int32]bool)
@@ -550,53 +558,114 @@ func TestDecoder(t *testing.T) {
 	var n int
 	var err error
 
-	for i, test := range tests {
-		err = nil
-		dec := NewDecoder(bytes.NewReader(test.in))
-		switch test.f {
-		case fDecodeBool:
-			rv, n, err = dec.DecodeBool()
-		case fDecodeDouble:
-			rv, n, err = dec.DecodeDouble()
-		case fDecodeEnum:
-			rv, n, err = dec.DecodeEnum(validEnums)
-		case fDecodeFixedOpaque:
-			want := test.wantVal.([]byte)
-			rv, n, err = dec.DecodeFixedOpaque(int32(len(want)))
-		case fDecodeFloat:
-			rv, n, err = dec.DecodeFloat()
-		case fDecodeHyper:
-			rv, n, err = dec.DecodeHyper()
-		case fDecodeInt:
-			rv, n, err = dec.DecodeInt()
-		case fDecodeOpaque:
-			rv, n, err = dec.DecodeOpaque()
-		case fDecodeString:
-			rv, n, err = dec.DecodeString()
-		case fDecodeUhyper:
-			rv, n, err = dec.DecodeUhyper()
-		case fDecodeUint:
-			rv, n, err = dec.DecodeUint()
-		default:
-			t.Errorf("%v #%d unrecognized function", test.f, i)
-			continue
-		}
+	decoders := []func(test) *Decoder{
+		func(t test) *Decoder {
+			// return DecoderLimited for test cases that can't succeed.
+			if t.maxSize == 0 {
+				return NewDecoder(bytes.NewReader(t.in))
+			}
+			return NewDecoderLimited(bytes.NewReader(t.in), t.maxSize)
+		},
+		func(t test) *Decoder {
+			return NewDecoderLimited(bytes.NewReader(t.in), t.maxSize)
+		},
+	}
+	for _, decoder := range decoders {
+		for i, test := range tests {
+			err = nil
+			var dec *Decoder
+			dec = decoder(test)
+			switch test.f {
+			case fDecodeBool:
+				rv, n, err = dec.DecodeBool()
+			case fDecodeDouble:
+				rv, n, err = dec.DecodeDouble()
+			case fDecodeEnum:
+				rv, n, err = dec.DecodeEnum(validEnums)
+			case fDecodeFixedOpaque:
+				want := test.wantVal.([]byte)
+				rv, n, err = dec.DecodeFixedOpaque(int32(len(want)))
+			case fDecodeFloat:
+				rv, n, err = dec.DecodeFloat()
+			case fDecodeHyper:
+				rv, n, err = dec.DecodeHyper()
+			case fDecodeInt:
+				rv, n, err = dec.DecodeInt()
+			case fDecodeOpaque:
+				rv, n, err = dec.DecodeOpaque()
+			case fDecodeString:
+				rv, n, err = dec.DecodeString()
+			case fDecodeUhyper:
+				rv, n, err = dec.DecodeUhyper()
+			case fDecodeUint:
+				rv, n, err = dec.DecodeUint()
+			default:
+				t.Errorf("%v #%d unrecognized function", test.f, i)
+				continue
+			}
 
-		// First ensure the number of bytes read is the expected value
-		// and the error is the expected one.
-		testName := fmt.Sprintf("%v #%d", test.f, i)
-		if !testExpectedURet(t, testName, n, test.wantN, err, test.err) {
-			continue
-		}
-		if test.err != nil {
-			continue
-		}
+			// First ensure the number of bytes read is the expected value
+			// and the error is the expected one.
+			testName := fmt.Sprintf("%v #%d", test.f, i)
+			if !testExpectedURet(t, testName, n, test.wantN, err, test.err) {
+				continue
+			}
+			if test.err != nil {
+				continue
+			}
 
-		// Finally, ensure the read value is the expected one.
-		if !reflect.DeepEqual(rv, test.wantVal) {
+			// Finally, ensure the read value is the expected one.
+			if !reflect.DeepEqual(rv, test.wantVal) {
+				t.Errorf("%s: unexpected result - got: %v want: %v\n",
+					testName, rv, test.wantVal)
+				continue
+			}
+		}
+	}
+}
+
+// TestUnmarshalLimited ensures the UnmarshalLimited function properly handles
+// various cases not already covered by the other tests.
+func TestUnmarshalLimited(t *testing.T) {
+	buf := []byte{
+		0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+		0x00, 0x00, 0x00, 0x02,
+	}
+
+	testName := "UnmarshalLimited to capped slice"
+	cappedSlice := make([]bool, 0, 1)
+	expectedN := 8
+	expectedErr := error(nil)
+	expectedVal := []bool{true}
+	n, err := UnmarshalLimited(bytes.NewReader(buf), &cappedSlice, 8)
+	if testExpectedURet(t, testName, n, expectedN, err, expectedErr) {
+		if !reflect.DeepEqual(cappedSlice, expectedVal) {
 			t.Errorf("%s: unexpected result - got: %v want: %v\n",
-				testName, rv, test.wantVal)
-			continue
+				testName, cappedSlice, expectedVal)
+		}
+	}
+
+	// Positive map test.
+	buf = []byte{
+		0x00, 0x00, 0x00, 0x02, // R length
+		0x00, 0x00, 0x00, 0x04, 0x6D, 0x61, 0x70, 0x31, // R key map1
+		0x00, 0x00, 0x00, 0x01, // R value map1
+		0x00, 0x00, 0x00, 0x04, 0x6D, 0x61, 0x70, 0x32, // R key map2
+		0x00, 0x00, 0x00, 0x02, // R value map2
+	}
+	type myMap struct {
+		R map[string]uint32
+	}
+	expectedMapVal := &myMap{
+		R: map[string]uint32{"map1": 1, "map2": 2}, // R
+	}
+	var m myMap
+	n, err = UnmarshalLimited(bytes.NewReader(buf), &m, 28)
+	expectedN = 28
+	if testExpectedURet(t, testName, n, expectedN, err, expectedErr) {
+		if !reflect.DeepEqual(&m, expectedMapVal) {
+			t.Errorf("%s: unexpected result - got: %v want: %v\n",
+				testName, m, expectedMapVal)
 		}
 	}
 }

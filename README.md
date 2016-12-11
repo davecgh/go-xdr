@@ -72,7 +72,7 @@ func main() {
 	// Declare a variable to provide Unmarshal with a concrete type and instance
 	// to decode into.
 	var h ImageHeader
-	bytesRead, err := xdr.Unmarshal(bytes.NewReader(encodedData), &h)
+	bytesRead, err := xdr.Unmarshal(encodedData, &h)
 	if err != nil {
 		fmt.Println(err)
 		return

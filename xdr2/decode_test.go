@@ -59,7 +59,7 @@ type allTypesTest struct {
 // opaqueStruct is used to test handling of uint8 slices and arrays.
 type opaqueStruct struct {
 	Slice []uint8  `xdr:"opaque=false"`
-	Array [1]uint8 `xdr:"opaque=false"`
+	Array [1]uint8 `xdropaque:"false"` // old syntax, backward compatibility
 }
 
 type unionStruct struct {

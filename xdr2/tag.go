@@ -65,12 +65,7 @@ func (t xdrtag) Get(opt string) string {
 			return "true"
 		}
 		if len(tag) > len(opt) && tag[:len(opt)] == opt && tag[len(opt)] == '=' {
-			val := tag[len(opt)+1:]
-			i = strings.Index(val, ",")
-			if i >= 0 {
-				val = val[i:]
-			}
-			return val
+			return tag[len(opt)+1:]
 		}
 		tag = next
 	}

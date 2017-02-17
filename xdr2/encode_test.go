@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package xdr_test
+package xdr
 
 import (
 	"fmt"
@@ -22,8 +22,6 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	. "github.com/davecgh/go-xdr/xdr2"
 )
 
 // testExpectedMRet is a convenience method to test an expected number of bytes
@@ -306,6 +304,35 @@ func TestMarshal(t *testing.T) {
 		{opaqueStruct{[]uint8{1}, [1]uint8{2}},
 			[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
 			8, &MarshalError{ErrorCode: ErrIO}},
+
+		// Discriminated unions
+		{unionStruct{0, 0, 1, 2},
+			[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02},
+			12, nil},
+		{unionStruct{1, 0, 1, 2},
+			[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02},
+			12, nil},
+		{unionStruct{2, 0, 1, 2},
+			[]byte{0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02},
+			8, nil},
+		{unionBoolStruct{false, 0, 1, 2},
+			[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02},
+			12, nil},
+		{unionBoolStruct{true, 0, 1, 2},
+			[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02},
+			12, nil},
+		{invalidUnionStruct{"err"}, []byte{}, 0, &MarshalError{ErrorCode: ErrBadDiscriminant}},
+
+		// Optional data
+		{optionalDataStruct{1, &optionalDataStruct{2, nil}},
+			[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00},
+			16, nil},
+		{optionalDataStruct{1, nil},
+			[]uint8{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00},
+			7, &MarshalError{ErrorCode: ErrIO}},
+		{invalidOptionalDataStruct{1},
+			[]byte{},
+			0, &MarshalError{ErrorCode: ErrBadOptional}},
 
 		// Expected errors
 		{nilInterface, []byte{}, 0, &MarshalError{ErrorCode: ErrNilInterface}},

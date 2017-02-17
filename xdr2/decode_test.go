@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package xdr_test
+package xdr
 
 import (
 	"bytes"
@@ -23,8 +23,6 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	. "github.com/davecgh/go-xdr/xdr2"
 )
 
 // subTest is used to allow testing of the Unmarshal function into struct fields
@@ -60,8 +58,35 @@ type allTypesTest struct {
 
 // opaqueStruct is used to test handling of uint8 slices and arrays.
 type opaqueStruct struct {
-	Slice []uint8  `xdropaque:"false"`
-	Array [1]uint8 `xdropaque:"false"`
+	Slice []uint8  `xdr:"opaque=false"`
+	Array [1]uint8 `xdropaque:"false"` // old syntax, backward compatibility
+}
+
+type unionStruct struct {
+	UV int  `xdr:"union"`
+	V0 byte `xdr:"unioncase=0"`
+	V1 byte `xdr:"unioncase=1"`
+	VA byte
+}
+
+type unionBoolStruct struct {
+	UV bool `xdr:"union"`
+	V0 byte `xdr:"unioncase=0"`
+	V1 byte `xdr:"unioncase=1"`
+	VA byte
+}
+
+type invalidUnionStruct struct {
+	UV string `xdr:"union"`
+}
+
+type optionalDataStruct struct {
+	Data int
+	Next *optionalDataStruct `xdr:"optional"`
+}
+
+type invalidOptionalDataStruct struct {
+	Data int `xdr:"optional"`
 }
 
 // testExpectedURet is a convenience method to test an expected number of bytes
@@ -349,6 +374,37 @@ func TestUnmarshal(t *testing.T) {
 		{[]byte{0x00, 0x00}, allTypesTest{}, 2, &UnmarshalError{ErrorCode: ErrIO}},
 		{[]byte{0x00, 0x00, 0x00}, opaqueStruct{}, 3, &UnmarshalError{ErrorCode: ErrIO}},
 		{[]byte{0x00, 0x00, 0x00, 0x00, 0x00}, opaqueStruct{}, 5, &UnmarshalError{ErrorCode: ErrIO}},
+
+		// Discriminated unions
+		{[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
+			unionStruct{0, 1, 0, 1},
+			12, nil},
+		{[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
+			unionStruct{1, 0, 1, 1},
+			12, nil},
+		{[]byte{0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01},
+			unionStruct{2, 0, 0, 1},
+			8, nil},
+		{[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
+			unionBoolStruct{false, 1, 0, 1},
+			12, nil},
+		{[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
+			unionBoolStruct{true, 0, 1, 1},
+			12, nil},
+		{[]byte{0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01},
+			invalidUnionStruct{},
+			8, &UnmarshalError{ErrorCode: ErrBadDiscriminant}},
+
+		// Optional data
+		{[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00},
+			optionalDataStruct{1, &optionalDataStruct{2, nil}},
+			16, nil},
+		{[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00},
+			optionalDataStruct{1, nil},
+			7, &UnmarshalError{ErrorCode: ErrIO}},
+		{[]byte{0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00},
+			invalidOptionalDataStruct{},
+			0, &UnmarshalError{ErrorCode: ErrBadOptional}},
 
 		// Expected errors
 		{nil, nilInterface, 0, &UnmarshalError{ErrorCode: ErrNilInterface}},

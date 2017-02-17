@@ -14,14 +14,12 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package xdr_test
+package xdr
 
 import (
 	"bytes"
 	"testing"
 	"unsafe"
-
-	"github.com/davecgh/go-xdr/xdr2"
 )
 
 // BenchmarkUnmarshal benchmarks the Unmarshal function by using a dummy
@@ -47,7 +45,7 @@ func BenchmarkUnmarshal(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		r := bytes.NewReader(encodedData)
-		_, _ = xdr.Unmarshal(r, &h)
+		_, _ = Unmarshal(r, &h)
 	}
 	b.SetBytes(int64(len(encodedData)))
 }
@@ -70,7 +68,7 @@ func BenchmarkMarshal(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		w.Reset()
-		_, _ = xdr.Marshal(w, &h)
+		_, _ = Marshal(w, &h)
 	}
 	b.SetBytes(int64(size))
 }

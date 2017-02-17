@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 Dave Collins <dave@davec.name>
+ * Copyright (c) 2015-2017 Giovanni Bajo <rasky@develer.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above

@@ -21,7 +21,7 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/davecgh/go-xdr/xdr2"
+	xdr "github.com/bluearchive/go-xdr/xdr2"
 )
 
 // BenchmarkUnmarshal benchmarks the Unmarshal function by using a dummy

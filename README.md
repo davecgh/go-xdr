@@ -19,8 +19,7 @@ flexible and work directly with files, network connections, etc.
 
 ## Documentation
 
-[![GoDoc](https://godoc.org/github.com/davecgh/go-xdr/xdr2?status.png)]
-(http://godoc.org/github.com/davecgh/go-xdr/xdr2)
+[![GoDoc](https://godoc.org/github.com/davecgh/go-xdr/xdr2?status.png)](http://godoc.org/github.com/davecgh/go-xdr/xdr2)
 
 Full `go doc` style documentation for the project can be viewed online without
 installing this package by using the excellent GoDoc site here:

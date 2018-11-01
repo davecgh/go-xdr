@@ -1,10 +1,8 @@
 go-xdr
 ======
 
-[![Build Status](https://travis-ci.org/davecgh/go-xdr.png?branch=master)]
-(https://travis-ci.org/davecgh/go-xdr) [![Coverage Status]
-(https://coveralls.io/repos/davecgh/go-xdr/badge.png?branch=master)]
-(https://coveralls.io/r/davecgh/go-xdr?branch=master)
+[![Build Status](https://travis-ci.org/davecgh/go-xdr.png?branch=master)](https://travis-ci.org/davecgh/go-xdr)
+[![Coverage Status](https://coveralls.io/repos/davecgh/go-xdr/badge.png?branch=master)](https://coveralls.io/r/davecgh/go-xdr?branch=master)
 
 Go-xdr implements the data representation portion of the External Data
 Representation (XDR) standard protocol as specified in RFC 4506 (obsoletes RFC
@@ -21,8 +19,7 @@ flexible and work directly with files, network connections, etc.
 
 ## Documentation
 
-[![GoDoc](https://godoc.org/github.com/davecgh/go-xdr/xdr2?status.png)]
-(http://godoc.org/github.com/davecgh/go-xdr/xdr2)
+[![GoDoc](https://godoc.org/github.com/davecgh/go-xdr/xdr2?status.png)](http://godoc.org/github.com/davecgh/go-xdr/xdr2)
 
 Full `go doc` style documentation for the project can be viewed online without
 installing this package by using the excellent GoDoc site here:

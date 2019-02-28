@@ -1,20 +1,34 @@
 #!/bin/bash
 # The script does automatic checking on a Go package and its sub-packages, including:
 # 1. gofmt         (http://golang.org/cmd/gofmt/)
-# 2. goimports     (https://github.com/bradfitz/goimports)
-# 3. golint        (https://github.com/golang/lint)
-# 4. go vet        (http://golang.org/cmd/vet)
-# 5. test coverage (http://blog.golang.org/cover)
+# 2. golint        (https://github.com/golang/lint)
+# 3. go vet        (http://golang.org/cmd/vet)
+# 4. gosimple      (https://github.com/dominikh/go-simple)
+# 5. unconvert     (https://github.com/mdempsky/unconvert)
+# 6. goimports     (https://github.com/bradfitz/goimports)
+# 7. race detector (http://blog.golang.org/race-detector)
+# 8. test coverage (http://blog.golang.org/cover)
 
-set -e
+set -ex
 
 # Automatic checks
 cd xdr2
-test -z "$(gofmt -l -w .     | tee /dev/stderr)"
-test -z "$(goimports -l -w . | tee /dev/stderr)"
-test -z "$(golint .          | tee /dev/stderr)"
-go vet ./...
+
+# run tests
 env GORACE="halt_on_error=1" go test -v -race ./...
+
+# golangci-lint (github.com/golangci/golangci-lint) is used to run each each
+# static checker.
+
+# check linters
+golangci-lint run --disable-all --deadline=10m \
+  --enable=gofmt \
+  --enable=golint \
+  --enable=vet \
+  --enable=gosimple \
+  --enable=unconvert \
+  --enable=ineffassign \
+  --enable=goimports
 
 # Run test coverage on each subdirectories and merge the coverage profile.
 

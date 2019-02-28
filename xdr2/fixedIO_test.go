@@ -53,7 +53,7 @@ func (w *fixedWriter) Bytes() []byte {
 // newFixedWriter returns a new io.Writer that will error once more bytes than
 // the specified max have been written.
 func newFixedWriter(max int) *fixedWriter {
-	b := make([]byte, max, max)
+	b := make([]byte, max)
 	fw := fixedWriter{b, 0}
 	return &fw
 }

@@ -167,7 +167,7 @@ func (enc *Encoder) EncodeEnum(v int32, validEnums map[int32]bool) (int, error) 
 // 	Represented as an XDR encoded enumeration where 0 is false and 1 is true
 func (enc *Encoder) EncodeBool(v bool) (int, error) {
 	i := int32(0)
-	if v == true {
+	if v {
 		i = 1
 	}
 	return enc.EncodeInt(i)
@@ -383,7 +383,7 @@ func (enc *Encoder) encodeFixedArray(v reflect.Value, ignoreOpaque bool) (int, e
 		// copying the array into a new slice.  This is rather ugly, but
 		// the inability to create a constant slice from an
 		// unaddressable array is a limitation of Go.
-		slice := make([]byte, v.Len(), v.Len())
+		slice := make([]byte, v.Len())
 		reflect.Copy(reflect.ValueOf(slice), v)
 		return enc.EncodeFixedOpaque(slice)
 	}
